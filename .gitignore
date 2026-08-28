@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Xcode / iOS
+ios/VoiceInbox.xcodeproj/
+ios/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Node / server
+server/node_modules/
+server/dist/
+server/.env
+
+# Local data
+*.log

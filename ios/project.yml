@@ -1,0 +1,25 @@
+name: VoiceInbox
+options:
+  bundleIdPrefix: com.voiceinbox
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+targets:
+  VoiceInbox:
+    type: application
+    platform: iOS
+    sources:
+      - VoiceInbox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.voiceinbox.app
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Voice Inbox
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Voice Inbox records your voice notes so they can be transcribed and organized into to-dos, reminders, and ideas.
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "0.1.0"
