@@ -30,6 +30,22 @@ open VoiceInbox.xcodeproj
 
 Requires Xcode 26+. The app targets iOS 17+ (SwiftData).
 
+### Install on a real iPhone (no App Store)
+
+One-time prerequisite: Xcode → Settings → Accounts must have the Apple ID
+signed in (personal team 朗 李 / `YG2PCP8NGY` — the project is configured for
+automatic signing with it). Then:
+
+```
+scripts/install-device.sh
+```
+
+Builds with development signing and installs directly via `devicectl`
+(defaults to Lang's iPhone 14 Pro; pass another UDID as the first argument).
+Free-team signatures last 7 days — rerun the script to renew. On the phone,
+set 设置 → Voice Inbox 的服务器地址为 Mac 的局域网 IP（默认已填
+`http://10.0.0.93:8787`，设置页内可测试连接）。
+
 ### Server
 
 ```
