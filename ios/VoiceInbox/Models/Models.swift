@@ -30,6 +30,13 @@ final class CaptureRecord {
     var durationSec: Double?
     var transcript: String?
     var language: String?
+    /// Capture id on the backend, once the pipeline has started.
+    var serverId: String?
+    /// AI classification result (M2): intent + confidence + payload JSON from the server.
+    var intentRaw: String?
+    var confidence: Double?
+    var payloadJSON: String?
+    var lastError: String?
 
     var mode: CaptureMode {
         get { CaptureMode(rawValue: modeRaw) ?? .quick }

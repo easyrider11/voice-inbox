@@ -1,18 +1,12 @@
 // Replaceable AI-provider interfaces (PROJECT.md §7.4).
 // Both are called only from the backend; API keys never leave it.
-// Implementations land in M2 (hosted ASR + Claude structured outputs).
 
-export interface AudioRef {
-  /** S3 object key of the uploaded audio. */
-  key: string;
-  contentType: string;
+export interface AudioInput {
+  /** Raw audio bytes (the backend holds audio only for the processing window). */
+  data: Buffer;
+  /** Container format: m4a, wav, mp3, ... */
+  format: string;
   durationSec?: number;
-}
-
-export interface Segment {
-  startSec: number;
-  endSec: number;
-  text: string;
 }
 
 export interface TranscribeOptions {
@@ -22,12 +16,14 @@ export interface TranscribeOptions {
 
 export interface Transcription {
   text: string;
-  segments?: Segment[];
   language: string;
+  /** Audio duration reported by the provider, ms. */
+  durationMs?: number;
 }
 
 export interface ASRProvider {
-  transcribe(audio: AudioRef, opts: TranscribeOptions): Promise<Transcription>;
+  readonly name: string;
+  transcribe(audio: AudioInput, opts: TranscribeOptions): Promise<Transcription>;
 }
 
 export type Intent = "todo" | "reminder" | "idea" | "unclassified";
@@ -35,7 +31,7 @@ export type Intent = "todo" | "reminder" | "idea" | "unclassified";
 export interface TodoPayload {
   title: string;
   details: string;
-  subtasks: { text: string }[];
+  subtasks: string[];
 }
 
 export interface ReminderPayload {
@@ -58,7 +54,9 @@ export interface StructureContext {
 export interface StructuredResult {
   intent: Intent;
   confidence: number;
-  payload: TodoPayload | ReminderPayload | IdeaPayload | null;
+  todo: TodoPayload | null;
+  reminder: ReminderPayload | null;
+  idea: IdeaPayload | null;
 }
 
 export interface MeetingNotes {
@@ -69,6 +67,7 @@ export interface MeetingNotes {
 }
 
 export interface Structurer {
+  readonly name: string;
   structure(transcript: string, ctx: StructureContext): Promise<StructuredResult>;
   summarizeMeeting(transcript: string): Promise<MeetingNotes>;
 }

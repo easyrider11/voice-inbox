@@ -14,6 +14,8 @@ struct HomeView: View {
 
     @State private var recorder = AudioRecorderService()
     @State private var player = AudioPlayerService()
+    @State private var pipeline = CapturePipeline()
+    @State private var confirming: CaptureRecord?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -29,7 +31,13 @@ struct HomeView: View {
                             reminderCount: openReminderCount,
                             ideaCount: ideas.count
                         )
-                        InboxSection(captures: captures, player: player, onDelete: delete)
+                        InboxSection(
+                            captures: captures,
+                            player: player,
+                            onDelete: delete,
+                            onOpen: { confirming = $0 },
+                            onRetry: { pipeline.run($0, in: modelContext) }
+                        )
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 300)
@@ -46,6 +54,9 @@ struct HomeView: View {
             .navigationTitle("收件箱")
         }
         .tint(.amber)
+        .sheet(item: $confirming) { capture in
+            ConfirmSheet(capture: capture)
+        }
         .alert("无法录音", isPresented: showingError) {
             Button("好", role: .cancel) {}
         } message: {
@@ -83,6 +94,7 @@ struct HomeView: View {
         capture.durationSec = result.duration
         modelContext.insert(capture)
         try? modelContext.save()
+        pipeline.run(capture, in: modelContext)
     }
 
     private func delete(_ capture: CaptureRecord) {
@@ -150,6 +162,8 @@ private struct InboxSection: View {
     var captures: [CaptureRecord]
     var player: AudioPlayerService
     var onDelete: (CaptureRecord) -> Void
+    var onOpen: (CaptureRecord) -> Void
+    var onRetry: (CaptureRecord) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -161,7 +175,18 @@ private struct InboxSection: View {
             } else {
                 ForEach(captures) { capture in
                     CaptureRow(capture: capture, player: player)
+                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .onTapGesture {
+                            if capture.status == .awaitingConfirm {
+                                onOpen(capture)
+                            }
+                        }
                         .contextMenu {
+                            if capture.status == .failed {
+                                Button("重试", systemImage: "arrow.clockwise") {
+                                    onRetry(capture)
+                                }
+                            }
                             Button("删除", systemImage: "trash", role: .destructive) {
                                 onDelete(capture)
                             }
@@ -218,13 +243,15 @@ private struct CaptureRow: View {
             .accessibilityLabel(isPlaying ? "停止播放" : "播放录音")
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("语音速记")
+                Text(rowTitle)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                Text("\(formattedDuration) · \(capture.createdAt.formatted(date: .omitted, time: .shortened))")
+                    .lineLimit(1)
+                Text(subtitle)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
+                    .lineLimit(1)
             }
 
             Spacer()
@@ -234,13 +261,30 @@ private struct CaptureRow: View {
                 .fontWeight(.semibold)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.amber.opacity(0.15))
-                .foregroundStyle(Color.amber)
+                .background(chipBackground)
+                .foregroundStyle(chipForeground)
                 .clipShape(Capsule())
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private var rowTitle: String {
+        if let title = capture.decodedPayload?.title, !title.isEmpty {
+            return title
+        }
+        return "语音速记"
+    }
+
+    private var subtitle: String {
+        var parts = ["\(formattedDuration) · \(capture.createdAt.formatted(date: .omitted, time: .shortened))"]
+        if capture.status == .awaitingConfirm {
+            parts.append("轻点确认")
+        } else if capture.status == .failed, let error = capture.lastError {
+            parts.append(error)
+        }
+        return parts.joined(separator: " · ")
     }
 
     private var formattedDuration: String {
@@ -258,6 +302,14 @@ private struct CaptureRow: View {
         case .failed: "失败"
         case .recording: "录音中"
         }
+    }
+
+    private var chipBackground: Color {
+        capture.status == .failed ? Color.red.opacity(0.12) : Color.amber.opacity(0.15)
+    }
+
+    private var chipForeground: Color {
+        capture.status == .failed ? .red : .amber
     }
 }
 
