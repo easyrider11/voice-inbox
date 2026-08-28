@@ -30,8 +30,12 @@ export class MockStructurer implements Structurer {
     }
 
     if (/想法|idea|可以做|不如/i.test(transcript)) {
-      const bullets = clauses(transcript).slice(1);
-      const title = firstClause(transcript).replace(/^我有个想法[，,]?/, "") || bullets[0] || "一个想法";
+      let bullets = clauses(transcript).slice(1);
+      let title = firstClause(transcript).replace(/^我有个想法[，,]?/, "");
+      if (!title) {
+        title = bullets[0] ?? "一个想法";
+        bullets = bullets.slice(1);
+      }
       return {
         ...base,
         intent: "idea",
@@ -84,6 +88,17 @@ function firstClause(text: string): string {
 
 /** Very rough "明天下午三点" → ISO timestamp; the real resolver is Claude's job. */
 function guessFireAt(transcript: string, ctx: StructureContext): string | null {
+  const minuteMatch = transcript.match(/([一二三四五六七八九十两\d]+)分钟后/);
+  if (minuteMatch) {
+    const minuteNumerals: Record<string, number> = {
+      一: 1, 两: 2, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10,
+    };
+    const minutes = minuteNumerals[minuteMatch[1]!] ?? Number(minuteMatch[1]);
+    if (!Number.isNaN(minutes)) {
+      return new Date(new Date(ctx.now).getTime() + minutes * 60_000).toISOString();
+    }
+  }
+
   const match = transcript.match(/([一二三四五六七八九十两\d]+)点/);
   if (!match) return null;
   const numerals: Record<string, number> = {

@@ -162,7 +162,7 @@ struct ConfirmSheet: View {
             let card = ReminderCard(title: cleanTitle, fireDate: fireDate)
             card.sourceCaptureUUID = capture.uuid
             modelContext.insert(card)
-            // M3 registers the local notification for this card.
+            Task { await NotificationService.schedule(for: card) }
         case .idea:
             let card = IdeaCard(title: cleanTitle, bullets: bullets.map(\.text).filter { !$0.isEmpty })
             card.sourceCaptureUUID = capture.uuid

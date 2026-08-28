@@ -2,20 +2,22 @@ import SwiftUI
 import SwiftData
 
 /// Home screen (PROJECT.md §6.2):
-/// large title → Smart Lists tiles → inbox stream → central record control.
+/// large title → Smart Lists tiles → inbox stream (processing placeholders
+/// pinned on top, then content cards reverse-chronological) → central record control.
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \CaptureRecord.createdAt, order: .reverse) private var captures: [CaptureRecord]
-    @Query private var todos: [TodoCard]
-    @Query private var reminders: [ReminderCard]
-    @Query private var ideas: [IdeaCard]
+    @Query(sort: \TodoCard.createdAt, order: .reverse) private var todos: [TodoCard]
+    @Query(sort: \ReminderCard.createdAt, order: .reverse) private var reminders: [ReminderCard]
+    @Query(sort: \IdeaCard.createdAt, order: .reverse) private var ideas: [IdeaCard]
     @Query private var meetings: [MeetingNote]
 
     @State private var recorder = AudioRecorderService()
     @State private var player = AudioPlayerService()
     @State private var pipeline = CapturePipeline()
     @State private var confirming: CaptureRecord?
+    @State private var editing: EditTarget?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -31,13 +33,7 @@ struct HomeView: View {
                             reminderCount: openReminderCount,
                             ideaCount: ideas.count
                         )
-                        InboxSection(
-                            captures: captures,
-                            player: player,
-                            onDelete: delete,
-                            onOpen: { confirming = $0 },
-                            onRetry: { pipeline.run($0, in: modelContext) }
-                        )
+                        inboxStream
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 300)
@@ -52,15 +48,116 @@ struct HomeView: View {
                 )
             }
             .navigationTitle("收件箱")
+            .navigationDestination(for: InboxCategory.self) { category in
+                CategoryListView(category: category, onEdit: { editing = $0 })
+            }
         }
         .tint(.amber)
         .sheet(item: $confirming) { capture in
             ConfirmSheet(capture: capture)
         }
+        .sheet(item: $editing) { target in
+            CardEditorSheet(target: target)
+        }
         .alert("无法录音", isPresented: showingError) {
             Button("好", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
+        }
+    }
+
+    // MARK: - Inbox stream
+
+    /// Active captures stay pinned as placeholders; saved captures disappear
+    /// behind the cards they produced.
+    private var activeCaptures: [CaptureRecord] {
+        captures.filter { $0.status != .saved }
+    }
+
+    private enum StreamEntry: Identifiable {
+        case todo(TodoCard)
+        case reminder(ReminderCard)
+        case ideaStack([IdeaCard])
+
+        var id: AnyHashable {
+            switch self {
+            case .todo(let card): AnyHashable(card.persistentModelID)
+            case .reminder(let card): AnyHashable(card.persistentModelID)
+            case .ideaStack: AnyHashable("idea-stack")
+            }
+        }
+
+        var date: Date {
+            switch self {
+            case .todo(let card): card.createdAt
+            case .reminder(let card): card.createdAt
+            case .ideaStack(let cards): cards.first?.createdAt ?? .distantPast
+            }
+        }
+    }
+
+    private var streamEntries: [StreamEntry] {
+        var entries: [StreamEntry] = []
+        entries += todos.map(StreamEntry.todo)
+        entries += reminders.map(StreamEntry.reminder)
+        if !ideas.isEmpty {
+            entries.append(.ideaStack(ideas))
+        }
+        return entries.sorted { $0.date > $1.date }
+    }
+
+    @ViewBuilder
+    private var inboxStream: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("最近")
+                .font(.title3)
+                .fontWeight(.bold)
+
+            if activeCaptures.isEmpty && streamEntries.isEmpty {
+                EmptyInboxCard()
+            }
+
+            ForEach(activeCaptures) { capture in
+                CaptureRow(capture: capture, player: player)
+                    .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .onTapGesture {
+                        if capture.status == .awaitingConfirm {
+                            confirming = capture
+                        }
+                    }
+                    .contextMenu {
+                        if capture.status == .failed {
+                            Button("重试", systemImage: "arrow.clockwise") {
+                                pipeline.run(capture, in: modelContext)
+                            }
+                        }
+                        Button("删除", systemImage: "trash", role: .destructive) {
+                            delete(capture)
+                        }
+                    }
+            }
+
+            ForEach(streamEntries) { entry in
+                switch entry {
+                case .todo(let card):
+                    TodoCardView(card: card)
+                        .contextMenu {
+                            Button("编辑", systemImage: "pencil") { editing = .todo(card) }
+                            Button("删除", systemImage: "trash", role: .destructive) { deleteCard(.todo(card)) }
+                        }
+                case .reminder(let card):
+                    ReminderCardView(card: card) { toggleReminder(card) }
+                        .contextMenu {
+                            Button("编辑", systemImage: "pencil") { editing = .reminder(card) }
+                            Button("删除", systemImage: "trash", role: .destructive) { deleteCard(.reminder(card)) }
+                        }
+                case .ideaStack(let cards):
+                    NavigationLink(value: InboxCategory.ideas) {
+                        IdeaStackView(ideas: cards)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
@@ -107,6 +204,27 @@ struct HomeView: View {
         modelContext.delete(capture)
         try? modelContext.save()
     }
+
+    private func deleteCard(_ target: EditTarget) {
+        switch target {
+        case .todo(let card): modelContext.delete(card)
+        case .reminder(let card):
+            NotificationService.cancel(card.notificationID)
+            modelContext.delete(card)
+        case .idea(let card): modelContext.delete(card)
+        }
+        try? modelContext.save()
+    }
+
+    private func toggleReminder(_ card: ReminderCard) {
+        card.done.toggle()
+        if card.done {
+            NotificationService.cancel(card.notificationID)
+        } else {
+            Task { await NotificationService.schedule(for: card) }
+        }
+        try? modelContext.save()
+    }
 }
 
 // MARK: - Smart Lists
@@ -121,82 +239,46 @@ private struct SmartListsGrid: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 12) {
-            SmartListTile(title: "今天", count: todayCount, symbol: "sun.max.fill")
-            SmartListTile(title: "待办", count: todoCount, symbol: "checklist")
-            SmartListTile(title: "提醒", count: reminderCount, symbol: "bell.fill")
-            SmartListTile(title: "想法", count: ideaCount, symbol: "lightbulb.fill")
+            SmartListTile(category: .today, count: todayCount, symbol: "sun.max.fill")
+            SmartListTile(category: .todos, count: todoCount, symbol: "checklist")
+            SmartListTile(category: .reminders, count: reminderCount, symbol: "bell.fill")
+            SmartListTile(category: .ideas, count: ideaCount, symbol: "lightbulb.fill")
         }
     }
 }
 
 private struct SmartListTile: View {
-    var title: String
+    var category: InboxCategory
     var count: Int
     var symbol: String
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Color.amber)
-                Text(title)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Text("\(count)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .monospacedDigit()
-        }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
-
-// MARK: - Inbox stream
-
-private struct InboxSection: View {
-    var captures: [CaptureRecord]
-    var player: AudioPlayerService
-    var onDelete: (CaptureRecord) -> Void
-    var onOpen: (CaptureRecord) -> Void
-    var onRetry: (CaptureRecord) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("最近")
-                .font(.title3)
-                .fontWeight(.bold)
-            if captures.isEmpty {
-                EmptyInboxCard()
-            } else {
-                ForEach(captures) { capture in
-                    CaptureRow(capture: capture, player: player)
-                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .onTapGesture {
-                            if capture.status == .awaitingConfirm {
-                                onOpen(capture)
-                            }
-                        }
-                        .contextMenu {
-                            if capture.status == .failed {
-                                Button("重试", systemImage: "arrow.clockwise") {
-                                    onRetry(capture)
-                                }
-                            }
-                            Button("删除", systemImage: "trash", role: .destructive) {
-                                onDelete(capture)
-                            }
-                        }
+        NavigationLink(value: category) {
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(Color.amber)
+                    Text(category.title)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
                 }
+                Spacer()
+                Text("\(count)")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.primary)
             }
-            // M3: To-do / Reminder / Idea / Meeting content cards (PROJECT.md §6.4).
+            .padding(14)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
+        .buttonStyle(.plain)
     }
 }
+
+// MARK: - Placeholders
 
 private struct EmptyInboxCard: View {
     var body: some View {

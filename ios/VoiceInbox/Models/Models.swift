@@ -56,9 +56,24 @@ final class CaptureRecord {
     }
 }
 
-struct Subtask: Codable, Hashable {
+struct Subtask: Codable, Hashable, Identifiable {
+    var id: UUID
     var text: String
-    var done: Bool = false
+    var done: Bool
+
+    init(text: String, done: Bool = false) {
+        self.id = UUID()
+        self.text = text
+        self.done = done
+    }
+
+    // id was added in M3 — decode older payloads without one.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        text = try container.decode(String.self, forKey: .text)
+        done = try container.decodeIfPresent(Bool.self, forKey: .done) ?? false
+    }
 }
 
 @Model

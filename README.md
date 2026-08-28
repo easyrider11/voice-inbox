@@ -13,7 +13,8 @@ An AI voice inbox for knowledge workers: talk to the single button at the center
 - **M0 Scaffolding** — done. iOS skeleton + Fastify `/health` verified on both ends.
 - **M1 Recording core** — done on simulator. Four-state central record control (tap / hold / drag-to-lock / stop-cancel), AVFoundation AAC recording persisted via `AudioStore`, capture rows with playback, unit tests green (`xcodebuild test`). Real-device pass still pending.
 - **M2 Cloud pipeline** — done end-to-end on simulator: record → upload → transcribe → classify/structure → confirmation sheet → saved card. Providers are pluggable and activate on credentials (`server/.env.example`): **Tencent Cloud ASR** (SentenceRecognition, engine `16k_zh-PY` for Mandarin/English/Cantonese code-switching — the commercial engine family behind WeChat voice input; WeChat's own engine is not publicly available) and **Claude** (`claude-opus-5`, structured outputs). Without keys, mock providers keep the loop runnable.
-- **M3 Inbox cards + notifications** — next.
+- **M3 Inbox** — done on simulator: content cards render in the stream (To-do with checkable subtask rows, Reminder with fire-time badge and done toggle, Ideas as a static offset stack), Smart Lists tiles navigate to filtered lists, cards support edit/delete via context menus, and confirmed reminders schedule iOS local notifications that fire on time (banner verified).
+- **M4 Meeting mode** — next.
 
 See [PROJECT.md §12](PROJECT.md#12-milestones) for the roadmap.
 
