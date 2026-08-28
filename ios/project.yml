@@ -10,6 +10,9 @@ targets:
     platform: iOS
     sources:
       - VoiceInbox
+    scheme:
+      testTargets:
+        - VoiceInboxTests
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.voiceinbox.app
@@ -23,3 +26,17 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CURRENT_PROJECT_VERSION: "1"
         MARKETING_VERSION: "0.1.0"
+  VoiceInboxTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - VoiceInboxTests
+    dependencies:
+      - target: VoiceInbox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.voiceinbox.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/VoiceInbox.app/VoiceInbox
+        BUNDLE_LOADER: $(TEST_HOST)

@@ -10,7 +10,11 @@ An AI voice inbox for knowledge workers: talk to the single button at the center
 
 ## Status
 
-M0 scaffolding. See [PROJECT.md §12](PROJECT.md#12-milestones) for the roadmap.
+- **M0 Scaffolding** — done. iOS skeleton + Fastify `/health` verified on both ends.
+- **M1 Recording core** — done on simulator. Four-state central record control (tap / hold / drag-to-lock / stop-cancel), AVFoundation AAC recording persisted via `AudioStore`, capture rows with playback, unit tests green (`xcodebuild test`). Real-device pass still pending.
+- **M2 Cloud pipeline** — next.
+
+See [PROJECT.md §12](PROJECT.md#12-milestones) for the roadmap.
 
 ## Development
 

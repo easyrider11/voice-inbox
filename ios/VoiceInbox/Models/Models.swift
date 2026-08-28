@@ -10,6 +10,8 @@ enum CaptureMode: String, Codable {
 
 enum CaptureStatus: String, Codable {
     case recording
+    /// Audio captured locally; cloud pipeline (M2) hasn't picked it up yet.
+    case recorded
     case uploading
     case processing
     case awaitingConfirm
@@ -23,7 +25,9 @@ final class CaptureRecord {
     var createdAt: Date
     var modeRaw: String
     var statusRaw: String
-    var audioLocalPath: String?
+    /// Filename inside AudioStore's recordings directory (relative — container paths change between installs).
+    var audioFilename: String?
+    var durationSec: Double?
     var transcript: String?
     var language: String?
 
