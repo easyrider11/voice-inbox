@@ -13,19 +13,27 @@ targets:
     scheme:
       testTargets:
         - VoiceInboxTests
+    info:
+      path: VoiceInbox/Info.plist
+      properties:
+        CFBundleDisplayName: Voice Inbox
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSMicrophoneUsageDescription: Voice Inbox 用麦克风录下你的语音，转写并整理成待办、提醒和想法。
+        NSLocalNetworkUsageDescription: Voice Inbox 需要连接你本地网络中的开发服务器来完成转写与整理。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.voiceinbox.app
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Voice Inbox
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: Voice Inbox records your voice notes so they can be transcribed and organized into to-dos, reminders, and ideas.
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
         CURRENT_PROJECT_VERSION: "1"
         MARKETING_VERSION: "0.1.0"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YG2PCP8NGY
   VoiceInboxTests:
     type: bundle.unit-test
     platform: iOS
@@ -40,3 +48,5 @@ targets:
         SWIFT_VERSION: "6.0"
         TEST_HOST: $(BUILT_PRODUCTS_DIR)/VoiceInbox.app/VoiceInbox
         BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: YG2PCP8NGY

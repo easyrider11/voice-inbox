@@ -13,11 +13,17 @@ struct HomeView: View {
     @Query(sort: \IdeaCard.createdAt, order: .reverse) private var ideas: [IdeaCard]
     @Query private var meetings: [MeetingNote]
 
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("hasSeenIntro") private var hasSeenIntro = false
+
     @State private var recorder = AudioRecorderService()
     @State private var player = AudioPlayerService()
     @State private var pipeline = CapturePipeline()
     @State private var confirming: CaptureRecord?
     @State private var editing: EditTarget?
+    @State private var showingSettings = false
+    @State private var pendingCardDelete: EditTarget?
+    @State private var pendingCaptureDelete: CaptureRecord?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -48,6 +54,16 @@ struct HomeView: View {
                 )
             }
             .navigationTitle("收件箱")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("设置")
+                }
+            }
             .navigationDestination(for: InboxCategory.self) { category in
                 CategoryListView(category: category, onEdit: { editing = $0 })
             }
@@ -59,11 +75,73 @@ struct HomeView: View {
         .sheet(item: $editing) { target in
             CardEditorSheet(target: target)
         }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .fullScreenCover(isPresented: introBinding) {
+            OnboardingView {
+                hasSeenIntro = true
+            }
+        }
+        .confirmationDialog(
+            "删除这张卡片？",
+            isPresented: cardDeleteBinding,
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive) {
+                if let target = pendingCardDelete {
+                    deleteCard(target)
+                }
+                pendingCardDelete = nil
+            }
+            Button("取消", role: .cancel) { pendingCardDelete = nil }
+        }
+        .confirmationDialog(
+            "删除这条录音？音频将一并删除。",
+            isPresented: captureDeleteBinding,
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive) {
+                if let capture = pendingCaptureDelete {
+                    delete(capture)
+                }
+                pendingCaptureDelete = nil
+            }
+            Button("取消", role: .cancel) { pendingCaptureDelete = nil }
+        }
         .alert("无法录音", isPresented: showingError) {
             Button("好", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }
+        .task {
+            NotificationService.updateBadge(with: reminders)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active || phase == .background {
+                NotificationService.updateBadge(with: reminders)
+            }
+        }
+        .onChange(of: reminderBadgeState) { _, _ in
+            NotificationService.updateBadge(with: reminders)
+        }
+    }
+
+    /// Changes whenever anything badge-relevant changes.
+    private var reminderBadgeState: Int {
+        reminders.reduce(0) { $0 &+ $1.fireDate.hashValue &+ ($1.done ? 1 : 0) }
+    }
+
+    private var introBinding: Binding<Bool> {
+        Binding(get: { !hasSeenIntro }, set: { if !$0 { hasSeenIntro = true } })
+    }
+
+    private var cardDeleteBinding: Binding<Bool> {
+        Binding(get: { pendingCardDelete != nil }, set: { if !$0 { pendingCardDelete = nil } })
+    }
+
+    private var captureDeleteBinding: Binding<Bool> {
+        Binding(get: { pendingCaptureDelete != nil }, set: { if !$0 { pendingCaptureDelete = nil } })
     }
 
     // MARK: - Inbox stream
@@ -118,7 +196,9 @@ struct HomeView: View {
             }
 
             ForEach(activeCaptures) { capture in
-                CaptureRow(capture: capture, player: player)
+                CaptureRow(capture: capture, player: player, onRetry: {
+                    pipeline.run(capture, in: modelContext)
+                })
                     .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .onTapGesture {
                         if capture.status == .awaitingConfirm {
@@ -132,7 +212,7 @@ struct HomeView: View {
                             }
                         }
                         Button("删除", systemImage: "trash", role: .destructive) {
-                            delete(capture)
+                            pendingCaptureDelete = capture
                         }
                     }
             }
@@ -143,13 +223,13 @@ struct HomeView: View {
                     TodoCardView(card: card)
                         .contextMenu {
                             Button("编辑", systemImage: "pencil") { editing = .todo(card) }
-                            Button("删除", systemImage: "trash", role: .destructive) { deleteCard(.todo(card)) }
+                            Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .todo(card) }
                         }
                 case .reminder(let card):
                     ReminderCardView(card: card) { toggleReminder(card) }
                         .contextMenu {
                             Button("编辑", systemImage: "pencil") { editing = .reminder(card) }
-                            Button("删除", systemImage: "trash", role: .destructive) { deleteCard(.reminder(card)) }
+                            Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .reminder(card) }
                         }
                 case .ideaStack(let cards):
                     NavigationLink(value: InboxCategory.ideas) {
@@ -302,6 +382,7 @@ private struct EmptyInboxCard: View {
 private struct CaptureRow: View {
     var capture: CaptureRecord
     var player: AudioPlayerService
+    var onRetry: (() -> Void)?
 
     private var isPlaying: Bool {
         capture.audioFilename != nil && player.playingFilename == capture.audioFilename
@@ -337,6 +418,22 @@ private struct CaptureRow: View {
             }
 
             Spacer()
+
+            if capture.status == .failed, let onRetry {
+                Button {
+                    Haptics.tap()
+                    onRetry()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.amber)
+                        .frame(width: 30, height: 30)
+                        .background(Color.amber.opacity(0.15))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("重试处理")
+            }
 
             Text(statusLabel)
                 .font(.caption2)

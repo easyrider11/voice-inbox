@@ -66,7 +66,8 @@ app.post("/v1/auth/apple", notImplemented("M5"));
 app.get("/v1/me/usage", notImplemented("M5"));
 
 try {
-  await app.listen({ port: config.port, host: "127.0.0.1" });
+  // 0.0.0.0 so a phone on the same LAN can reach the dev server (PLAN-MVP.md P1).
+  await app.listen({ port: config.port, host: "0.0.0.0" });
 } catch (err) {
   app.log.error(err);
   process.exit(1);

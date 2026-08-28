@@ -32,6 +32,7 @@ struct CardEditorSheet: View {
     @State private var details = ""
     @State private var lines: [Line] = []
     @State private var fireDate = Date.now
+    @State private var sourceTranscript: String?
     @State private var loaded = false
 
     var body: some View {
@@ -61,6 +62,15 @@ struct CardEditorSheet: View {
                         }
                     }
                 }
+
+                // Traceability (PLAN-MVP.md #6): what the AI structured, verbatim.
+                if let sourceTranscript {
+                    Section("原始转写") {
+                        Text(sourceTranscript)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .navigationTitle("编辑")
             .navigationBarTitleDisplayMode(.inline)
@@ -82,17 +92,26 @@ struct CardEditorSheet: View {
     private func load() {
         guard !loaded else { return }
         loaded = true
+        let sourceUUID: UUID?
         switch target {
         case .todo(let card):
             title = card.title
             details = card.details
             lines = card.subtasks.map { Line(text: $0.text, done: $0.done) }
+            sourceUUID = card.sourceCaptureUUID
         case .reminder(let card):
             title = card.title
             fireDate = card.fireDate
+            sourceUUID = card.sourceCaptureUUID
         case .idea(let card):
             title = card.title
             lines = card.bullets.map { Line(text: $0) }
+            sourceUUID = card.sourceCaptureUUID
+        }
+        if let sourceUUID,
+           let captures = try? modelContext.fetch(FetchDescriptor<CaptureRecord>()),
+           let capture = captures.first(where: { $0.uuid == sourceUUID }) {
+            sourceTranscript = capture.transcript
         }
     }
 

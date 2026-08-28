@@ -1,9 +1,9 @@
 import Foundation
 
 /// Thin client for the capture pipeline API (PROJECT.md §9).
-/// Dev default points at the local Fastify server; ATS permits loopback HTTP.
+/// The base URL is user-configurable in 设置 (simulator: loopback; device: Mac LAN IP).
 struct CaptureAPI {
-    var baseURL = URL(string: "http://127.0.0.1:8787")!
+    var baseURL: URL { ServerConfig.baseURL }
 
     struct CreateResponse: Decodable {
         let captureId: String

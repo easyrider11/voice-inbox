@@ -45,12 +45,25 @@ struct CategoryListView: View {
     private var content: some View {
         switch category {
         case .today:
+            // Overdue first — unhandled things must stay visible (PLAN-MVP.md #7).
+            let overdue = reminders.filter { !$0.done && $0.fireDate < .now && !Calendar.current.isDateInToday($0.fireDate) }
             let due = reminders.filter { Calendar.current.isDateInToday($0.fireDate) }
-            if due.isEmpty {
+            if overdue.isEmpty && due.isEmpty {
                 emptyText("今天没有到期的提醒")
             }
-            ForEach(due) { card in
-                reminderRow(card)
+            if !overdue.isEmpty {
+                sectionHeader("逾期")
+                ForEach(overdue) { card in
+                    reminderRow(card)
+                }
+            }
+            if !due.isEmpty {
+                if !overdue.isEmpty {
+                    sectionHeader("今天")
+                }
+                ForEach(due) { card in
+                    reminderRow(card)
+                }
             }
         case .todos:
             if todos.isEmpty { emptyText("还没有待办") }
@@ -94,6 +107,15 @@ struct CategoryListView: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 40)
+    }
+
+    private func sectionHeader(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .fontWeight(.semibold)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 6)
     }
 
     private func toggleReminder(_ card: ReminderCard) {

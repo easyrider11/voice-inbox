@@ -44,8 +44,13 @@ struct TodoCardView: View {
         var subtasks = card.subtasks
         guard let index = subtasks.firstIndex(where: { $0.id == subtask.id }) else { return }
         subtasks[index].done.toggle()
+        subtasks[index].done ? Haptics.light() : Haptics.tap()
         card.subtasks = subtasks
-        card.completedAt = subtasks.allSatisfy(\.done) && !subtasks.isEmpty ? .now : nil
+        let allDone = subtasks.allSatisfy(\.done) && !subtasks.isEmpty
+        if allDone, card.completedAt == nil {
+            Haptics.success()
+        }
+        card.completedAt = allDone ? .now : nil
     }
 }
 
@@ -81,7 +86,10 @@ struct ReminderCardView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Button(action: onToggleDone) {
+            Button {
+                Haptics.light()
+                onToggleDone()
+            } label: {
                 Image(systemName: card.done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 21))
                     .foregroundStyle(card.done ? Color.amber : Color(.systemGray3))
@@ -125,6 +133,9 @@ struct ReminderCardView: View {
 
 struct IdeaCardView: View {
     let card: IdeaCard
+    /// When shown as the top of a stack, the total idea count (badge inline in
+    /// the header so it never covers content).
+    var stackCount: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -135,7 +146,18 @@ struct IdeaCardView: View {
                 Text(card.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
+                    .lineLimit(2)
                 Spacer()
+                if let stackCount, stackCount > 1 {
+                    Text("\(stackCount) 条")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.amber.opacity(0.15))
+                        .foregroundStyle(Color.amber)
+                        .clipShape(Capsule())
+                }
             }
             ForEach(Array(card.bullets.prefix(3).enumerated()), id: \.offset) { _, bullet in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -177,22 +199,9 @@ struct IdeaStackView: View {
                 if ideas.count > 1 {
                     stackLayer(scale: 0.95, offset: 8)
                 }
-                IdeaCardView(card: top)
+                IdeaCardView(card: top, stackCount: ideas.count)
             }
             .padding(.bottom, ideas.count > 1 ? CGFloat(min(ideas.count - 1, 2)) * 8 : 0)
-            .overlay(alignment: .topTrailing) {
-                if ideas.count > 1 {
-                    Text("\(ideas.count) 条想法")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.amber.opacity(0.15))
-                        .foregroundStyle(Color.amber)
-                        .clipShape(Capsule())
-                        .padding(10)
-                }
-            }
         }
     }
 

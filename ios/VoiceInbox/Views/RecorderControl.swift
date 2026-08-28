@@ -29,9 +29,12 @@ struct RecorderControl: View {
     private let lockCenter = CGSize(width: 0, height: -130)
     private let lockHitRadius: CGFloat = 55
 
+    private let appState = AppState.shared
+
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             timerLabel
+            waveform
             ZStack {
                 lockTarget
                 cancelButton
@@ -39,8 +42,24 @@ struct RecorderControl: View {
             }
             hintLabel
         }
+        .padding(.vertical, 24)
+        .padding(.horizontal, 32)
+        .background {
+            // Local backdrop so cards scrolling behind never fight the HUD.
+            // Display-only: must never swallow taps meant for cards underneath.
+            RoundedRectangle(cornerRadius: 44, style: .continuous)
+                .fill(Color(.systemGroupedBackground).opacity(recorder.isRecording ? 0.0 : 0.72))
+                .blur(radius: 18)
+                .allowsHitTesting(false)
+        }
         .animation(.snappy(duration: 0.2), value: kind)
         .animation(.snappy(duration: 0.2), value: isOverLock)
+        .onChange(of: appState.startToken) { _, _ in
+            // App Shortcut / Action Button entry (PLAN-MVP.md #8).
+            if kind == nil, !recorder.isRecording {
+                handleTap()
+            }
+        }
     }
 
     // MARK: - Pieces
@@ -52,6 +71,22 @@ struct RecorderControl: View {
             .foregroundStyle(.primary)
             .opacity(recorder.isRecording ? 1 : 0)
             .accessibilityHidden(!recorder.isRecording)
+            .allowsHitTesting(false)
+    }
+
+    private var waveform: some View {
+        HStack(spacing: 3) {
+            ForEach(Array(recorder.levelHistory.enumerated()), id: \.offset) { _, sample in
+                Capsule()
+                    .fill(Color.amber)
+                    .frame(width: 3, height: 4 + CGFloat(sample) * 26)
+            }
+        }
+        .frame(height: 32)
+        .opacity(recorder.isRecording ? 1 : 0)
+        .animation(.linear(duration: 0.1), value: recorder.levelHistory)
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder
@@ -74,6 +109,7 @@ struct RecorderControl: View {
     private var cancelButton: some View {
         if kind == .locked {
             Button {
+                Haptics.warning()
                 recorder.cancel()
                 kind = nil
             } label: {
@@ -123,6 +159,7 @@ struct RecorderControl: View {
         Text(hintText)
             .font(.footnote)
             .foregroundStyle(.secondary)
+            .allowsHitTesting(false)
     }
 
     private var hintText: String {
@@ -174,6 +211,7 @@ struct RecorderControl: View {
                 }
                 guard kind == .holding else { return }
                 if isOverLock {
+                    Haptics.rigid()
                     kind = .locked
                 } else {
                     finish()
@@ -184,6 +222,7 @@ struct RecorderControl: View {
     // MARK: - Actions
 
     private func startRecording(as newKind: Kind) {
+        Haptics.tap()
         kind = newKind
         Task {
             do {
@@ -196,6 +235,7 @@ struct RecorderControl: View {
     }
 
     private func finish() {
+        Haptics.rigid()
         kind = nil
         guard let result = recorder.stop() else { return }
         onFinished(result)

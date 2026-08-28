@@ -25,10 +25,14 @@ final class AudioRecorderService {
         let duration: TimeInterval
     }
 
+    static let waveformSampleCount = 26
+
     private(set) var isRecording = false
     private(set) var elapsed: TimeInterval = 0
     /// Normalized input level 0...1 for the UI pulse.
     private(set) var level: Float = 0
+    /// Rolling window of recent levels for the live waveform (PLAN-MVP.md #4).
+    private(set) var levelHistory: [Float] = Array(repeating: 0, count: waveformSampleCount)
     private(set) var currentFilename: String?
 
     private var recorder: AVAudioRecorder?
@@ -97,6 +101,8 @@ final class AudioRecorderService {
         elapsed = recorder.currentTime
         let db = recorder.averagePower(forChannel: 0) // -160 dB ... 0 dB
         level = max(0, min(1, (db + 50) / 50))
+        levelHistory.removeFirst()
+        levelHistory.append(level)
     }
 
     private func cleanup() {
@@ -107,6 +113,7 @@ final class AudioRecorderService {
         isRecording = false
         elapsed = 0
         level = 0
+        levelHistory = Array(repeating: 0, count: Self.waveformSampleCount)
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
     }
 }

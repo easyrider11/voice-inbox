@@ -36,6 +36,7 @@ struct ConfirmSheet: View {
     @State private var subtasks: [Line] = []
     @State private var bullets: [Line] = []
     @State private var fireDate = Date.now.addingTimeInterval(3600)
+    @State private var showingDiscardConfirm = false
     @State private var loaded = false
 
     var body: some View {
@@ -88,7 +89,9 @@ struct ConfirmSheet: View {
                 }
 
                 Section {
-                    Button("删除这条捕捉", role: .destructive, action: discard)
+                    Button("删除这条捕捉", role: .destructive) {
+                        showingDiscardConfirm = true
+                    }
                 }
             }
             .navigationTitle("确认")
@@ -105,6 +108,14 @@ struct ConfirmSheet: View {
             }
         }
         .tint(.amber)
+        .confirmationDialog(
+            "删除这条捕捉？录音和转写将一并删除。",
+            isPresented: $showingDiscardConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("删除", role: .destructive, action: discard)
+            Button("取消", role: .cancel) {}
+        }
         .onAppear(perform: loadFromCapture)
     }
 
@@ -177,6 +188,7 @@ struct ConfirmSheet: View {
         capture.intentRaw = intent.rawValue
         capture.status = .saved
         try? modelContext.save()
+        Haptics.success()
         dismiss()
     }
 
