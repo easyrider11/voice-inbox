@@ -183,34 +183,113 @@ struct IdeaCardView: View {
     }
 }
 
-/// Offset static stack (§6.4): the newest idea on top, edges of the cards
-/// behind peeking out. Flip/swipe animation stays in the backlog; tapping
-/// opens the full ideas list.
+/// Offset stack (§6.4), now interactive (B12): swipe the top idea sideways to
+/// flip to the next one — the cards behind rise into place as you drag,
+/// telegraphing where things are going. Tap still opens the full ideas list.
+///
+/// Feel rules (apple-design): 1:1 tracking while dragging, momentum decides
+/// commit (a flick is enough), the release spring carries velocity, and the
+/// cards behind hint the outcome. Reduced motion: instant swap, no rotation.
 struct IdeaStackView: View {
     /// Newest first.
     let ideas: [IdeaCard]
 
+    @State private var topSlot = 0
+    @State private var dragX: CGFloat = 0
+    @State private var isFlying = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var count: Int { ideas.count }
+
+    private func idea(at slot: Int) -> IdeaCard {
+        ideas[(topSlot + slot) % count]
+    }
+
+    /// 0…1 — how far the swipe has committed; drives the rise of the stack.
+    private var progress: CGFloat {
+        min(1, abs(dragX) / 160)
+    }
+
     var body: some View {
-        if let top = ideas.first {
+        if !ideas.isEmpty {
             ZStack(alignment: .bottom) {
-                if ideas.count > 2 {
-                    stackLayer(scale: 0.90, offset: 16)
+                if count > 2 {
+                    behindCard(idea(at: 2), fromScale: 0.90, toScale: 0.95, fromOffset: 16, toOffset: 8)
                 }
-                if ideas.count > 1 {
-                    stackLayer(scale: 0.95, offset: 8)
+                if count > 1 {
+                    behindCard(idea(at: 1), fromScale: 0.95, toScale: 1.0, fromOffset: 8, toOffset: 0)
                 }
-                IdeaCardView(card: top, stackCount: ideas.count)
+                topCard
             }
-            .padding(.bottom, ideas.count > 1 ? CGFloat(min(ideas.count - 1, 2)) * 8 : 0)
+            .padding(.bottom, count > 1 ? CGFloat(min(count - 1, 2)) * 8 : 0)
         }
     }
 
-    private func stackLayer(scale: CGFloat, offset: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Color(.secondarySystemGroupedBackground))
-            .frame(height: 60)
-            .scaleEffect(x: scale)
-            .offset(y: offset)
-            .opacity(0.7)
+    private var topCard: some View {
+        IdeaCardView(card: idea(at: 0), stackCount: count)
+            .offset(x: dragX)
+            .rotationEffect(
+                reduceMotion ? .zero : .degrees(Double(dragX / 22)),
+                anchor: .bottom
+            )
+            .gesture(count > 1 ? swipeGesture : nil)
+            .accessibilityHint(count > 1 ? "左右滑动查看下一条想法" : "")
+    }
+
+    private func behindCard(
+        _ card: IdeaCard,
+        fromScale: CGFloat, toScale: CGFloat,
+        fromOffset: CGFloat, toOffset: CGFloat
+    ) -> some View {
+        IdeaCardView(card: card)
+            .scaleEffect(fromScale + (toScale - fromScale) * progress)
+            .offset(y: fromOffset + (toOffset - fromOffset) * progress)
+            .opacity(0.7 + 0.3 * progress)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 15)
+            .onChanged { value in
+                guard !isFlying else { return }
+                // Direct manipulation: the card stays glued to the finger.
+                dragX = value.translation.width
+            }
+            .onEnded { value in
+                guard !isFlying else { return }
+                // Momentum projection: commit based on where the gesture is
+                // going, not just where it stopped — a quick flick is enough.
+                let projected = value.predictedEndTranslation.width
+                let commits = abs(projected) > 140 || abs(dragX) > 120
+
+                if !commits {
+                    withAnimation(Motion.respecting(reduceMotion, Motion.momentum)) {
+                        dragX = 0
+                    }
+                    return
+                }
+
+                if reduceMotion {
+                    topSlot = (topSlot + 1) % count
+                    dragX = 0
+                    Haptics.light()
+                    return
+                }
+
+                // Fly out with the gesture's momentum; when the card lands,
+                // the risen behind-card occupies exactly the top slot, so the
+                // index swap happens on an identical frame — no visible cut.
+                isFlying = true
+                let direction: CGFloat = dragX >= 0 ? 1 : -1
+                withAnimation(Motion.momentum) {
+                    dragX = direction * 560
+                } completion: {
+                    topSlot = (topSlot + 1) % count
+                    dragX = 0
+                    isFlying = false
+                    Haptics.light()
+                }
+            }
     }
 }

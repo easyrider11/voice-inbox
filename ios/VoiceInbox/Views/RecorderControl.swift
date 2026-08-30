@@ -25,6 +25,8 @@ struct RecorderControl: View {
     @State private var kind: Kind?
     @State private var dragOffset: CGSize = .zero
     @State private var isOverLock = false
+    @GestureState private var isPressed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let lockCenter = CGSize(width: 0, height: -130)
     private let lockHitRadius: CGFloat = 55
@@ -52,8 +54,7 @@ struct RecorderControl: View {
                 .blur(radius: 18)
                 .allowsHitTesting(false)
         }
-        .animation(.snappy(duration: 0.2), value: kind)
-        .animation(.snappy(duration: 0.2), value: isOverLock)
+        .animation(Motion.state, value: isOverLock)
         .onChange(of: appState.startToken) { _, _ in
             // App Shortcut / Action Button entry (PLAN-MVP.md #8).
             if kind == nil, !recorder.isRecording {
@@ -100,7 +101,7 @@ struct RecorderControl: View {
                 .clipShape(Circle())
                 .scaleEffect(isOverLock ? 1.15 : 1)
                 .offset(lockCenter)
-                .transition(.opacity.combined(with: .scale))
+                .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
                 .accessibilityHidden(true)
         }
     }
@@ -111,7 +112,9 @@ struct RecorderControl: View {
             Button {
                 Haptics.warning()
                 recorder.cancel()
-                kind = nil
+                withAnimation(Motion.respecting(reduceMotion, Motion.exit)) {
+                    kind = nil
+                }
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 17, weight: .semibold))
@@ -121,7 +124,7 @@ struct RecorderControl: View {
                     .clipShape(Circle())
             }
             .offset(CGSize(width: -110, height: 0))
-            .transition(.opacity.combined(with: .scale))
+            .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
             .accessibilityLabel("取消录音")
         }
     }
@@ -131,7 +134,7 @@ struct RecorderControl: View {
             Circle()
                 .fill(Color.amber.opacity(0.18))
                 .frame(width: 104, height: 104)
-                .scaleEffect(recorder.isRecording ? 1 + CGFloat(recorder.level) * 0.35 : 1)
+                .scaleEffect(recorder.isRecording && !reduceMotion ? 1 + CGFloat(recorder.level) * 0.35 : 1)
                 .animation(.linear(duration: 0.1), value: recorder.level)
             Circle()
                 .fill(Color.amber)
@@ -147,9 +150,16 @@ struct RecorderControl: View {
                     .foregroundStyle(.white)
             }
         }
-        .offset(cappedDragOffset)
+        .scaleEffect(isPressed ? 0.97 : 1)
+        .animation(Motion.press, value: isPressed)
+        .offset(effectiveDragOffset)
         .onTapGesture(perform: handleTap)
         .gesture(holdGesture)
+        .simultaneousGesture(
+            // Touch-down feedback: respond on press, not on release.
+            DragGesture(minimumDistance: 0)
+                .updating($isPressed) { _, state, _ in state = true }
+        )
         .accessibilityLabel(recorder.isRecording ? "停止录音" : "录音")
         .accessibilityHint(recorder.isRecording ? "轻点停止并保存" : "轻点开始录音")
         .accessibilityAddTraits(.isButton)
@@ -174,13 +184,15 @@ struct RecorderControl: View {
     // MARK: - Gestures
 
     private func handleTap() {
-        switch kind {
-        case nil:
-            startRecording(as: .tapped)
-        case .tapped, .locked:
-            finish()
-        case .holding:
-            break
+        withAnimation(Motion.respecting(reduceMotion, Motion.state)) {
+            switch kind {
+            case nil:
+                startRecording(as: .tapped)
+            case .tapped, .locked:
+                finish()
+            case .holding:
+                break
+            }
         }
     }
 
@@ -193,28 +205,39 @@ struct RecorderControl: View {
                     break
                 case .second(true, let drag):
                     if kind == nil {
-                        startRecording(as: .holding)
+                        withAnimation(Motion.respecting(reduceMotion, Motion.state)) {
+                            startRecording(as: .holding)
+                        }
                     }
                     guard kind == .holding else { break }
                     if let drag {
                         dragOffset = drag.translation
-                        isOverLock = distance(drag.translation, lockCenter) < lockHitRadius
+                        let overLock = distance(drag.translation, lockCenter) < lockHitRadius
+                        if overLock != isOverLock {
+                            // Haptic fires on the same frame as the visual snap (harmony).
+                            if overLock { Haptics.light() }
+                            isOverLock = overLock
+                        }
                     }
                 default:
                     break
                 }
             }
             .onEnded { _ in
-                defer {
-                    dragOffset = .zero
-                    isOverLock = false
-                }
-                guard kind == .holding else { return }
-                if isOverLock {
-                    Haptics.rigid()
-                    kind = .locked
-                } else {
-                    finish()
+                // Gesture release: the ride home carries momentum (slight bounce
+                // is earned by the drag; reduced motion gets a plain cross-fade).
+                withAnimation(Motion.respecting(reduceMotion, Motion.momentum)) {
+                    defer {
+                        dragOffset = .zero
+                        isOverLock = false
+                    }
+                    guard kind == .holding else { return }
+                    if isOverLock {
+                        Haptics.rigid()
+                        kind = .locked
+                    } else {
+                        finish()
+                    }
                 }
             }
     }
@@ -243,12 +266,17 @@ struct RecorderControl: View {
 
     // MARK: - Helpers
 
-    private var cappedDragOffset: CGSize {
+    /// 1:1 tracking within the natural range, then rubber-banding — the
+    /// further past the boundary, the less the button follows. Real things
+    /// slow down before they stop; they don't hit invisible walls.
+    private var effectiveDragOffset: CGSize {
         guard kind == .holding else { return .zero }
         let length = sqrt(dragOffset.width * dragOffset.width + dragOffset.height * dragOffset.height)
         guard length > 0 else { return .zero }
-        let capped = min(length, 150)
-        return CGSize(width: dragOffset.width / length * capped, height: dragOffset.height / length * capped)
+        let limit: CGFloat = 140
+        let overshoot = max(0, length - limit)
+        let extended = min(length, limit) + Motion.rubberband(overshoot)
+        return CGSize(width: dragOffset.width / length * extended, height: dragOffset.height / length * extended)
     }
 
     private func distance(_ a: CGSize, _ b: CGSize) -> CGFloat {

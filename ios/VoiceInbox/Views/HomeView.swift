@@ -6,6 +6,7 @@ import SwiftData
 /// pinned on top, then content cards reverse-chronological) → central record control.
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Query(sort: \CaptureRecord.createdAt, order: .reverse) private var captures: [CaptureRecord]
     @Query(sort: \TodoCard.createdAt, order: .reverse) private var todos: [TodoCard]
@@ -215,30 +216,46 @@ struct HomeView: View {
                             pendingCaptureDelete = capture
                         }
                     }
+                    .transition(.opacity)
             }
 
             ForEach(streamEntries) { entry in
-                switch entry {
-                case .todo(let card):
-                    TodoCardView(card: card)
-                        .contextMenu {
-                            Button("编辑", systemImage: "pencil") { editing = .todo(card) }
-                            Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .todo(card) }
+                Group {
+                    switch entry {
+                    case .todo(let card):
+                        TodoCardView(card: card)
+                            .contextMenu {
+                                Button("编辑", systemImage: "pencil") { editing = .todo(card) }
+                                Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .todo(card) }
+                            }
+                    case .reminder(let card):
+                        ReminderCardView(card: card) { toggleReminder(card) }
+                            .contextMenu {
+                                Button("编辑", systemImage: "pencil") { editing = .reminder(card) }
+                                Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .reminder(card) }
+                            }
+                    case .ideaStack(let cards):
+                        NavigationLink(value: InboxCategory.ideas) {
+                            IdeaStackView(ideas: cards)
                         }
-                case .reminder(let card):
-                    ReminderCardView(card: card) { toggleReminder(card) }
-                        .contextMenu {
-                            Button("编辑", systemImage: "pencil") { editing = .reminder(card) }
-                            Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .reminder(card) }
-                        }
-                case .ideaStack(let cards):
-                    NavigationLink(value: InboxCategory.ideas) {
-                        IdeaStackView(ideas: cards)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                 }
+                // A confirmed capture lands as a card — the entrance keeps the
+                // causal thread visible (never from scale 0; exit is faster).
+                .transition(
+                    reduceMotion
+                        ? .opacity
+                        : .asymmetric(insertion: Motion.cardInsertion, removal: .opacity)
+                )
             }
         }
+        .animation(Motion.respecting(reduceMotion, Motion.enter), value: streamKey)
+    }
+
+    /// Membership key for stream insert/remove transitions.
+    private var streamKey: Int {
+        activeCaptures.count &* 31 &+ streamEntries.count
     }
 
     // MARK: - Derived state
