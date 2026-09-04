@@ -85,7 +85,7 @@ struct CardEditorSheet: View {
                 }
             }
         }
-        .tint(.amber)
+        .tint(.accent)
         .onAppear(perform: load)
     }
 

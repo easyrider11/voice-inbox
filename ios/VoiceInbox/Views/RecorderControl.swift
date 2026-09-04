@@ -79,7 +79,7 @@ struct RecorderControl: View {
         HStack(spacing: 3) {
             ForEach(Array(recorder.levelHistory.enumerated()), id: \.offset) { _, sample in
                 Capsule()
-                    .fill(Color.amber)
+                    .fill(Color.accent)
                     .frame(width: 3, height: 4 + CGFloat(sample) * 26)
             }
         }
@@ -95,9 +95,9 @@ struct RecorderControl: View {
         if kind == .holding {
             Image(systemName: isOverLock ? "lock.fill" : "lock.open")
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(isOverLock ? Color.white : Color.secondary)
+                .foregroundStyle(isOverLock ? Color.onAccent : Color.secondary)
                 .frame(width: 44, height: 44)
-                .background(isOverLock ? Color.amber : Color(.secondarySystemGroupedBackground))
+                .background(isOverLock ? Color.accent : Color(.secondarySystemGroupedBackground))
                 .clipShape(Circle())
                 .scaleEffect(isOverLock ? 1.15 : 1)
                 .offset(lockCenter)
@@ -132,22 +132,22 @@ struct RecorderControl: View {
     private var mainButton: some View {
         ZStack {
             Circle()
-                .fill(Color.amber.opacity(0.18))
+                .fill(Color.accent.opacity(0.18))
                 .frame(width: 104, height: 104)
                 .scaleEffect(recorder.isRecording && !reduceMotion ? 1 + CGFloat(recorder.level) * 0.35 : 1)
                 .animation(.linear(duration: 0.1), value: recorder.level)
             Circle()
-                .fill(Color.amber)
+                .fill(Color.accent)
                 .frame(width: 80, height: 80)
-                .shadow(color: Color.amber.opacity(0.35), radius: 12, y: 4)
+                .shadow(color: Color.accent.opacity(0.35), radius: 12, y: 4)
             if recorder.isRecording {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(.white)
+                    .fill(Color.onAccent)
                     .frame(width: 26, height: 26)
             } else {
                 Image(systemName: "mic.fill")
                     .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
             }
         }
         .scaleEffect(isPressed ? 0.97 : 1)

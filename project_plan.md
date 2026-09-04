@@ -102,9 +102,9 @@ Structurer.summarizeMeeting(transcript) → MeetingNotes   // B8 接线
 - **教训（勿踩）**：SwiftData 持久化属性不能存 `PersistentIdentifier`；数组元素变更要
   整体重赋值触发观察。
 
-### 1.6 UI 规范（黑·白·琥珀橙极简，全局唯一视觉语言）
+### 1.6 UI 规范（白天白+橙 · 夜晚黑+黄，全局唯一视觉语言）
 
-- 唯一彩色 = 琥珀橙：浅色 `#FFA01E` / 深色 `#FFB84D`（`Color.amber`，已在 Theme.swift）。
+- 唯一彩色 = `Color.accent`（Theme.swift）：浅色**橙** `#FF8C1A` / 深色**黄** `#FFD60A`；压在它上面的图形用 `Color.onAccent`（橙上白、黄上黑），**禁止硬编码 `.white`**。
   **禁止绿色**；红色仅用于破坏性操作与逾期。
 - 底色 `systemGroupedBackground`，卡片 `secondarySystemGroupedBackground`，
   圆角 14–16 continuous，系统 SF Pro，数字 `monospacedDigit`。

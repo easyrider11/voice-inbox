@@ -35,7 +35,7 @@ struct SettingsView: View {
                                 ProgressView()
                             case .ok:
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(Color.amber)
+                                    .foregroundStyle(Color.accent)
                             case .failed:
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundStyle(.red)
@@ -81,7 +81,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .tint(.amber)
+        .tint(.accent)
     }
 
     private func providerLabel(_ name: String) -> String {

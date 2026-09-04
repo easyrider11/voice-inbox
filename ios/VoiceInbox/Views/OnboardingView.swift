@@ -11,14 +11,14 @@ struct OnboardingView: View {
 
             ZStack {
                 Circle()
-                    .fill(Color.amber.opacity(0.18))
+                    .fill(Color.accent.opacity(0.18))
                     .frame(width: 120, height: 120)
                 Circle()
-                    .fill(Color.amber)
+                    .fill(Color.accent)
                     .frame(width: 92, height: 92)
                 Image(systemName: "mic.fill")
                     .font(.system(size: 36, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
             }
             .padding(.bottom, 28)
 
@@ -54,10 +54,10 @@ struct OnboardingView: View {
             Button(action: onDone) {
                 Text("开始使用")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(Color.amber)
+                    .background(Color.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .padding(.horizontal, 24)
@@ -82,7 +82,7 @@ private struct OnboardingRow: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: symbol)
                 .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(Color.amber)
+                .foregroundStyle(Color.accent)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)

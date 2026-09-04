@@ -69,7 +69,7 @@ struct HomeView: View {
                 CategoryListView(category: category, onEdit: { editing = $0 })
             }
         }
-        .tint(.amber)
+        .tint(.accent)
         .sheet(item: $confirming) { capture in
             ConfirmSheet(capture: capture)
         }
@@ -355,7 +355,7 @@ private struct SmartListTile: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Image(systemName: symbol)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.amber)
+                        .foregroundStyle(Color.accent)
                     Text(category.title)
                         .font(.subheadline)
                         .fontWeight(.semibold)
@@ -414,9 +414,9 @@ private struct CaptureRow: View {
             } label: {
                 Image(systemName: isPlaying ? "stop.fill" : "play.fill")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onAccent)
                     .frame(width: 36, height: 36)
-                    .background(Color.amber)
+                    .background(Color.accent)
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -443,9 +443,9 @@ private struct CaptureRow: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.amber)
+                        .foregroundStyle(Color.accent)
                         .frame(width: 30, height: 30)
-                        .background(Color.amber.opacity(0.15))
+                        .background(Color.accent.opacity(0.15))
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
@@ -501,11 +501,11 @@ private struct CaptureRow: View {
     }
 
     private var chipBackground: Color {
-        capture.status == .failed ? Color.red.opacity(0.12) : Color.amber.opacity(0.15)
+        capture.status == .failed ? Color.red.opacity(0.12) : Color.accent.opacity(0.15)
     }
 
     private var chipForeground: Color {
-        capture.status == .failed ? .red : .amber
+        capture.status == .failed ? .red : .accent
     }
 }
 

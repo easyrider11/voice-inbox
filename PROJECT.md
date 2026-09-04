@@ -195,7 +195,7 @@ Four states: **Idle → Hold-to-record → Drag-to-lock → Stop / Cancel**.
 ### 6.5 Color and typography (suggested values, tune at implementation)
 
 - Base: black-and-white neutral, restrained, generous whitespace. Light mode: white ground, near-black text; dark mode inverts.
-- Accent (the only color): warm amber — light mode ≈ `#FFA01E`, dark mode brightened to ≈ `#FFB84D`. Used only for the record button, in-progress states, and key actions. **No green** (explicit user requirement).
+- Accent (the only color) — a two-mode identity (locked 2026-08-30): **day = white ground + orange `#FF8C1A`; night = black ground + yellow `#FFD60A`**. Glyphs on the accent flip with it (white on orange, black on yellow). Used only for the record button, in-progress states, and key actions. **No green** (explicit user requirement). The app icon ships both appearances.
 - Type: system SF Pro; Large Title (34pt bold), body 17pt — native iOS rhythm.
 
 ### 6.6 Enhancements backlog (post-MVP)

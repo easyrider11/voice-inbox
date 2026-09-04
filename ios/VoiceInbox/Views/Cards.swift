@@ -16,7 +16,7 @@ struct TodoCardView: View {
             HStack(alignment: .firstTextBaseline) {
                 Image(systemName: "checklist")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.amber)
+                    .foregroundStyle(Color.accent)
                 Text(card.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -63,7 +63,7 @@ private struct SubtaskRow: View {
             HStack(spacing: 10) {
                 Image(systemName: subtask.done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundStyle(subtask.done ? Color.amber : Color(.systemGray3))
+                    .foregroundStyle(subtask.done ? Color.accent : Color(.systemGray3))
                 Text(subtask.text)
                     .font(.subheadline)
                     .foregroundStyle(subtask.done ? .secondary : .primary)
@@ -92,7 +92,7 @@ struct ReminderCardView: View {
             } label: {
                 Image(systemName: card.done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 21))
-                    .foregroundStyle(card.done ? Color.amber : Color(.systemGray3))
+                    .foregroundStyle(card.done ? Color.accent : Color(.systemGray3))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(card.done ? "标记未完成" : "标记完成")
@@ -110,7 +110,7 @@ struct ReminderCardView: View {
             Spacer()
             Image(systemName: "bell.fill")
                 .font(.system(size: 13))
-                .foregroundStyle(Color.amber.opacity(card.done ? 0.4 : 1))
+                .foregroundStyle(Color.accent.opacity(card.done ? 0.4 : 1))
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground))
@@ -142,7 +142,7 @@ struct IdeaCardView: View {
             HStack(alignment: .firstTextBaseline) {
                 Image(systemName: "lightbulb.fill")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.amber)
+                    .foregroundStyle(Color.accent)
                 Text(card.title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
@@ -154,15 +154,15 @@ struct IdeaCardView: View {
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(Color.amber.opacity(0.15))
-                        .foregroundStyle(Color.amber)
+                        .background(Color.accent.opacity(0.15))
+                        .foregroundStyle(Color.accent)
                         .clipShape(Capsule())
                 }
             }
             ForEach(Array(card.bullets.prefix(3).enumerated()), id: \.offset) { _, bullet in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Circle()
-                        .fill(Color.amber)
+                        .fill(Color.accent)
                         .frame(width: 5, height: 5)
                         .offset(y: -2)
                     Text(bullet)

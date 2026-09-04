@@ -107,7 +107,7 @@ struct ConfirmSheet: View {
                 }
             }
         }
-        .tint(.amber)
+        .tint(.accent)
         .confirmationDialog(
             "删除这条捕捉？录音和转写将一并删除。",
             isPresented: $showingDiscardConfirm,
