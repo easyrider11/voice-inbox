@@ -25,6 +25,7 @@ struct HomeView: View {
     @State private var showingSettings = false
     @State private var pendingCardDelete: EditTarget?
     @State private var pendingCaptureDelete: CaptureRecord?
+    @State private var failedCapture: CaptureRecord?
     @State private var errorMessage: String?
     @State private var serverHealth = ServerHealthMonitor()
 
@@ -114,6 +115,13 @@ struct HomeView: View {
             }
             Button("取消", role: .cancel) { pendingCaptureDelete = nil }
         }
+        .alert("这条没处理成功", isPresented: failedBinding, presenting: failedCapture) { capture in
+            Button("重试") { pipeline.run(capture, in: modelContext) }
+            Button("删除", role: .destructive) { delete(capture) }
+            Button("好", role: .cancel) {}
+        } message: { capture in
+            Text(capture.lastError ?? "未知错误")
+        }
         .alert("无法录音", isPresented: showingError) {
             Button("好", role: .cancel) {}
         } message: {
@@ -147,6 +155,10 @@ struct HomeView: View {
 
     private var cardDeleteBinding: Binding<Bool> {
         Binding(get: { pendingCardDelete != nil }, set: { if !$0 { pendingCardDelete = nil } })
+    }
+
+    private var failedBinding: Binding<Bool> {
+        Binding(get: { failedCapture != nil }, set: { if !$0 { failedCapture = nil } })
     }
 
     private var captureDeleteBinding: Binding<Bool> {
@@ -212,6 +224,8 @@ struct HomeView: View {
                     .onTapGesture {
                         if capture.status == .awaitingConfirm {
                             confirming = capture
+                        } else if capture.status == .failed {
+                            failedCapture = capture
                         }
                     }
                     .contextMenu {
@@ -482,13 +496,14 @@ private struct CaptureRow: View {
     }
 
     private var subtitle: String {
-        var parts = ["\(formattedDuration) · \(capture.createdAt.formatted(date: .omitted, time: .shortened))"]
+        let meta = "\(formattedDuration) · \(capture.createdAt.formatted(date: .omitted, time: .shortened))"
         if capture.status == .awaitingConfirm {
-            parts.append("轻点确认")
-        } else if capture.status == .failed, let error = capture.lastError {
-            parts.append(error)
+            return meta + " · 轻点确认"
         }
-        return parts.joined(separator: " · ")
+        if capture.status == .failed, let error = capture.lastError {
+            return error + " · 轻点看详情"
+        }
+        return meta
     }
 
     private var formattedDuration: String {
