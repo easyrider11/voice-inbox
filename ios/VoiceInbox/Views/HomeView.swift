@@ -26,6 +26,7 @@ struct HomeView: View {
     @State private var pendingCardDelete: EditTarget?
     @State private var pendingCaptureDelete: CaptureRecord?
     @State private var errorMessage: String?
+    @State private var serverHealth = ServerHealthMonitor()
 
     var body: some View {
         NavigationStack {
@@ -34,6 +35,9 @@ struct HomeView: View {
                     .ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
+                        if case .unreachable(let message) = serverHealth.state {
+                            ServerStatusBanner(message: message) { showingSettings = true }
+                        }
                         SmartListsGrid(
                             todayCount: todayCount,
                             todoCount: openTodoCount,
@@ -76,7 +80,7 @@ struct HomeView: View {
         .sheet(item: $editing) { target in
             CardEditorSheet(target: target)
         }
-        .sheet(isPresented: $showingSettings) {
+        .sheet(isPresented: $showingSettings, onDismiss: { Task { await serverHealth.check() } }) {
             SettingsView()
         }
         .fullScreenCover(isPresented: introBinding) {
@@ -117,10 +121,14 @@ struct HomeView: View {
         }
         .task {
             NotificationService.updateBadge(with: reminders)
+            await serverHealth.check()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active || phase == .background {
                 NotificationService.updateBadge(with: reminders)
+            }
+            if phase == .active {
+                Task { await serverHealth.check() }
             }
         }
         .onChange(of: reminderBadgeState) { _, _ in

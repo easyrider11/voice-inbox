@@ -50,7 +50,7 @@ final class CapturePipeline {
             }
             throw CaptureAPI.APIError.timedOut
         } catch {
-            fail(capture, in: context, message: error.localizedDescription)
+            fail(capture, in: context, message: ServerHealthMonitor.humanMessage(for: error))
         }
     }
 
