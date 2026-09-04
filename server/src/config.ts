@@ -1,6 +1,14 @@
 // Environment configuration. Providers activate automatically when their
 // credentials are present; otherwise mock providers keep the pipeline runnable.
 
+// Load server/.env (gitignored) without a dependency — Node 20.12+ built-in.
+// Missing file is fine: CI and production set real environment variables.
+try {
+  process.loadEnvFile(".env");
+} catch {
+  // no .env present
+}
+
 export interface Config {
   port: number;
   databaseUrl?: string;
