@@ -36,18 +36,30 @@ export function registerCaptureRoutes(app: FastifyInstance, deps: Deps): void {
     return reply.code(204).send();
   });
 
-  app.post<{ Params: { id: string }; Body: { timezone?: string; localeHint?: string } }>(
+  // The phone may transcribe on-device and send text only (`transcript`);
+  // then no audio upload is needed and the server skips ASR.
+  app.post<{
+    Params: { id: string };
+    Body: { timezone?: string; localeHint?: string; transcript?: string; language?: string };
+  }>(
     "/v1/captures/:id/process",
     async (req, reply) => {
       const capture = store.get(req.params.id);
       if (!capture) return reply.code(404).send({ code: "not_found", message: "unknown capture" });
-      if (capture.status !== "uploaded") {
+      const providedText = req.body?.transcript?.trim();
+      const provided = providedText
+        ? { text: providedText, language: req.body?.language ?? "zh-CN" }
+        : undefined;
+      if (capture.status === "processing" || capture.status === "done") {
+        return reply.code(409).send({ code: "bad_state", message: `cannot process in status ${capture.status}` });
+      }
+      if (!provided && capture.status !== "uploaded") {
         return reply.code(409).send({ code: "bad_state", message: `cannot process in status ${capture.status}` });
       }
       capture.status = "processing";
       const timezone = req.body?.timezone ?? "Asia/Shanghai";
       const localeHint = req.body?.localeHint;
-      void runPipeline(capture, { store, asr, structurer }, timezone, localeHint).catch((err) => {
+      void runPipeline(capture, { store, asr, structurer }, timezone, localeHint, provided).catch((err) => {
         app.log.error(err, "capture pipeline crashed");
       });
       return reply.code(202).send({ status: capture.status });
@@ -78,17 +90,23 @@ async function runPipeline(
   deps: Deps,
   timezone: string,
   localeHint: string | undefined,
+  provided?: { text: string; language: string },
 ): Promise<void> {
   const { store, asr, structurer } = deps;
   try {
-    if (!capture.audioPath || !capture.audioFormat) {
-      throw new Error("no audio on capture");
+    let transcription: { text: string; language: string };
+    if (provided) {
+      transcription = provided;
+    } else {
+      if (!capture.audioPath || !capture.audioFormat) {
+        throw new Error("no audio on capture");
+      }
+      const data = await readFile(capture.audioPath);
+      transcription = await asr.transcribe(
+        { data, format: capture.audioFormat },
+        { mode: capture.mode, localeHint },
+      );
     }
-    const data = await readFile(capture.audioPath);
-    const transcription = await asr.transcribe(
-      { data, format: capture.audioFormat },
-      { mode: capture.mode, localeHint },
-    );
     capture.transcript = transcription.text;
     capture.language = transcription.language;
 

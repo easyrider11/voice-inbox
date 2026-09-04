@@ -16,6 +16,22 @@ final class ServerHealthMonitor {
     private(set) var state: State = .unknown
     private(set) var isChecking = false
 
+    private struct Health: Decodable {
+        struct Providers: Decodable {
+            let asr: String
+            let structurer: String
+        }
+        let providers: Providers
+    }
+
+    /// What the server said its ASR is on the last successful check.
+    /// Unknown counts as mock so the phone never trusts canned transcripts.
+    private(set) static var lastKnownASRProvider: String?
+
+    static var serverASRIsMock: Bool {
+        lastKnownASRProvider == nil || lastKnownASRProvider == "mock"
+    }
+
     func check() async {
         guard !isChecking else { return }
         isChecking = true
@@ -24,8 +40,11 @@ final class ServerHealthMonitor {
         var request = URLRequest(url: ServerConfig.baseURL.appending(path: "health"))
         request.timeoutInterval = 4
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) {
+                if let health = try? JSONDecoder().decode(Health.self, from: data) {
+                    Self.lastKnownASRProvider = health.providers.asr
+                }
                 state = .ok
             } else {
                 state = .unreachable("服务器返回了异常状态（\(Self.address)）")

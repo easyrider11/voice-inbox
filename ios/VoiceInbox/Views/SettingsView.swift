@@ -44,8 +44,8 @@ struct SettingsView: View {
                     }
                     .disabled(testState == .testing)
                     if case .ok(let asr, let structurer) = testState {
-                        LabeledContent("语音识别", value: providerLabel(asr))
-                        LabeledContent("整理模型", value: providerLabel(structurer))
+                        LabeledContent("语音识别", value: asr == "mock" ? "本机识别（Apple，服务器未配置云端）" : providerLabel(asr))
+                        LabeledContent("整理模型", value: structurer == "mock" ? "规则整理（未配置 Claude）" : providerLabel(structurer))
                     }
                     if case .failed(let message) = testState {
                         Text(message)

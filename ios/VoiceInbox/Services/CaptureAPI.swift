@@ -68,11 +68,16 @@ struct CaptureAPI {
         try Self.check(response)
     }
 
-    func process(captureId: String, timezone: String) async throws {
+    /// Pass `transcript` when the phone already transcribed the audio on-device;
+    /// the server then skips its own ASR and only structures the text.
+    func process(captureId: String, timezone: String, transcript: String? = nil, language: String? = nil) async throws {
         var request = URLRequest(url: baseURL.appending(path: "v1/captures/\(captureId)/process"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["timezone": timezone])
+        var body: [String: String] = ["timezone": timezone]
+        if let transcript { body["transcript"] = transcript }
+        if let language { body["language"] = language }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (_, response) = try await URLSession.shared.data(for: request)
         try Self.check(response)
     }

@@ -22,6 +22,7 @@ targets:
           - UIInterfaceOrientationPortrait
         NSMicrophoneUsageDescription: Voice Inbox 用麦克风录下你的语音，转写并整理成待办、提醒和想法。
         NSLocalNetworkUsageDescription: Voice Inbox 需要连接你本地网络中的开发服务器来完成转写与整理。
+        NSSpeechRecognitionUsageDescription: Voice Inbox 在手机上把你的语音转成文字，再整理成待办、提醒和想法。
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:

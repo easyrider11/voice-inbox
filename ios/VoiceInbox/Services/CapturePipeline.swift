@@ -29,11 +29,25 @@ final class CapturePipeline {
             let created = try await api.createCapture(mode: capture.mode)
             capture.serverId = created.captureId
             let fileURL = try AudioStore.url(for: filename)
-            try await api.uploadAudio(fileURL: fileURL, to: created.uploadUrl)
+
+            // No real ASR on the server yet → transcribe on the phone and send
+            // text only. A local failure is reported, never papered over with
+            // the mock's canned transcripts.
+            var local: SpeechTranscriber.Transcript?
+            if ServerHealthMonitor.serverASRIsMock {
+                local = try await SpeechTranscriber.transcribe(fileURL: fileURL)
+            } else {
+                try await api.uploadAudio(fileURL: fileURL, to: created.uploadUrl)
+            }
 
             capture.status = .processing
             try? context.save()
-            try await api.process(captureId: created.captureId, timezone: TimeZone.current.identifier)
+            try await api.process(
+                captureId: created.captureId,
+                timezone: TimeZone.current.identifier,
+                transcript: local?.text,
+                language: local?.language
+            )
 
             // Short captures target < 10 s end-to-end; poll with a generous cap.
             for _ in 0..<40 {
