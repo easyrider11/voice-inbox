@@ -9,7 +9,7 @@ enum ServerConfig {
         #if targetEnvironment(simulator)
         "http://127.0.0.1:8787"
         #else
-        "http://10.0.0.93:8787"
+        "http://192.168.20.21:8787"
         #endif
     }()
 
