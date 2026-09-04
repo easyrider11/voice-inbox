@@ -26,7 +26,16 @@ const structurer = config.anthropic.apiKey
 const store = new CaptureStore();
 
 const app = Fastify({
-  logger: true,
+  // stdout for the dev console, plus a file so requests from the phone can be
+  // grepped after the fact (.data/ is gitignored).
+  logger: {
+    transport: {
+      targets: [
+        { target: "pino/file", options: { destination: 1 } },
+        { target: "pino/file", options: { destination: ".data/server.log", mkdir: true } },
+      ],
+    },
+  },
   bodyLimit: 15 * 1024 * 1024,
 });
 
