@@ -32,7 +32,7 @@ xcrun devicectl device install app \
 （或直接跑 `scripts/install-device.sh`）
 
 4. iPhone 上如提示不受信任的开发者：设置 → 通用 → VPN 与设备管理 → 信任
-5. 手机 App 的设置页里服务器地址应为 Mac 当前的局域网 IP（2026-09-04 为 `http://192.168.20.21:8787`，以服务器启动日志为准；
+5. 手机 App 的设置页里服务器地址默认为 `http://MacBook-Air-2.local:8787`（Mac 的 Bonjour 名，不受 IP 变化影响；
    变了的话在 App 设置页改）；Mac 上确保后端在跑：
    Claude 会用 preview_start 启 `voice-inbox-server`，或手动
    `npm run dev --prefix ~/code/voice-inbox/server`

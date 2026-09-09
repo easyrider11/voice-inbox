@@ -44,8 +44,8 @@ Builds with development signing and installs directly via `devicectl`
 (defaults to Lang's iPhone 14 Pro; pass another UDID as the first argument).
 Free-team signatures last 7 days — rerun the script to renew. On the phone,
 set 设置 → Voice Inbox 的服务器地址为 Mac 的局域网 IP（默认已填
-`http://192.168.20.21:8787`——注意这个 IP 随 Mac 所在网络变化，服务器启动日志
-会打印当前地址；设置页内可修改并测试连接）。
+`http://MacBook-Air-2.local:8787`——用 Mac 的 Bonjour 主机名而不是 IP，换 Wi-Fi 也不用改；
+如果 Mac 改了名字，在设置页改地址并测试连接）。
 
 ### Server
 

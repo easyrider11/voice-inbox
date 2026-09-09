@@ -9,7 +9,9 @@ enum ServerConfig {
         #if targetEnvironment(simulator)
         "http://127.0.0.1:8787"
         #else
-        "http://192.168.20.21:8787"
+        // The Mac's Bonjour name survives IP changes across Wi-Fi networks;
+        // the raw IP broke twice in one week. Editable in 设置 if the Mac is renamed.
+        "http://MacBook-Air-2.local:8787"
         #endif
     }()
 
