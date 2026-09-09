@@ -64,8 +64,41 @@ final class CapturePipeline {
             }
             throw CaptureAPI.APIError.timedOut
         } catch {
-            fail(capture, in: context, message: ServerHealthMonitor.humanMessage(for: error))
+            // Cloud path failed. If the failure wasn't on-device speech itself,
+            // finish on the phone: Apple speech + the local rule structurer.
+            // The capture never dies just because a server is unreachable
+            // (offline use, and App Review has no access to a private Mac).
+            if error is SpeechTranscriber.Failure {
+                fail(capture, in: context, message: error.localizedDescription)
+                return
+            }
+            do {
+                try await completeOnDevice(capture, filename: filename)
+                try? context.save()
+            } catch let localError {
+                fail(
+                    capture,
+                    in: context,
+                    message: ServerHealthMonitor.humanMessage(for: error) + "；本机处理也失败：" + localError.localizedDescription
+                )
+            }
         }
+    }
+
+    /// Entire loop on the phone: transcript from Apple speech, card from the
+    /// same rules the server's fallback structurer uses.
+    private func completeOnDevice(_ capture: CaptureRecord, filename: String) async throws {
+        let fileURL = try AudioStore.url(for: filename)
+        let transcript = try await SpeechTranscriber.transcribe(fileURL: fileURL)
+        let output = LocalStructurer.structure(transcript.text)
+        store(
+            intent: output.intent,
+            confidence: output.confidence,
+            payload: output.payload,
+            transcript: transcript.text,
+            language: transcript.language,
+            to: capture
+        )
     }
 
     private func apply(
@@ -74,11 +107,28 @@ final class CapturePipeline {
         language: String?,
         to capture: CaptureRecord
     ) {
+        store(
+            intent: result.intent,
+            confidence: result.confidence,
+            payload: result.todo ?? result.reminder ?? result.idea,
+            transcript: transcript,
+            language: language,
+            to: capture
+        )
+    }
+
+    private func store(
+        intent: String,
+        confidence: Double,
+        payload: CaptureAPI.Payload?,
+        transcript: String?,
+        language: String?,
+        to capture: CaptureRecord
+    ) {
         capture.transcript = transcript
         capture.language = language
-        capture.intentRaw = result.intent
-        capture.confidence = result.confidence
-        let payload = result.todo ?? result.reminder ?? result.idea
+        capture.intentRaw = intent
+        capture.confidence = confidence
         if let payload, let data = try? JSONEncoder().encode(payload) {
             capture.payloadJSON = String(decoding: data, as: UTF8.self)
         } else {

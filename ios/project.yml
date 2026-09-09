@@ -25,13 +25,14 @@ targets:
         NSSpeechRecognitionUsageDescription: Voice Inbox 在手机上把你的语音转成文字，再整理成待办、提醒和想法。
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.langlipro.voiceinbox
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
         CURRENT_PROJECT_VERSION: "1"
-        MARKETING_VERSION: "0.1.0"
+        MARKETING_VERSION: "1.0.0"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: YG2PCP8NGY
