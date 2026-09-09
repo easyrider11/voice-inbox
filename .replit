@@ -1,0 +1,19 @@
+# Replit: import this repo (https://replit.com/github/easyrider11/voice-inbox),
+# add TENCENT_SECRET_ID / TENCENT_SECRET_KEY (and optionally ANTHROPIC_API_KEY)
+# in the Secrets pane, press Run — then Deploy (Autoscale) for a public HTTPS URL.
+entrypoint = "server/src/index.ts"
+modules = ["nodejs-22"]
+run = "cd server && npm ci && npm run build && npm start"
+
+[env]
+PORT = "8080"
+NODE_ENV = "production"
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["sh", "-c", "cd server && npm ci && npm run build"]
+run = ["sh", "-c", "cd server && npm start"]
+
+[[ports]]
+localPort = 8080
+externalPort = 80

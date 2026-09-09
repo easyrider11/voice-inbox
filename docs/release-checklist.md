@@ -9,9 +9,9 @@
 |---|---|---|
 | 1 | **加入 Apple Developer Program（$99/年）** | 现在是免费个人团队，不能上传 App Store Connect / TestFlight。https://developer.apple.com/programs/enroll/ ，个人身份审批通常 24–48 小时。 |
 | 2 | 在 App Store Connect 建 App 记录 | Bundle ID `com.langlipro.voiceinbox`，名称建议「语音收件箱」/ "Voice Inbox"（确认名字未被占用）。 |
-| 3 | 隐私政策网址 | 必填。内容要讲清：录音在手机本机识别，或经你的服务器送腾讯云识别；处理完即删；结果只存在手机。可放在 portfolio 站的一页。 |
-| 4 | 支持网址 | 必填，可用 GitHub 仓库地址或 portfolio 页面。 |
-| 5 | 后端上线（可选，见二.4） | 不上线也能过审——App 有完整本机模式。上线后体验更好（腾讯识别、Claude 整理）。 |
+| 3 | 隐私政策网址 | ✅ 已上线：https://lorre-portfolio.vercel.app/voice-inbox/privacy （中英双语，按真实数据流写；源码在 lang-portfolio `app/voice-inbox/privacy/page.jsx`） |
+| 4 | 支持网址 | ✅ 同一页面（含联系与支持段）：https://lorre-portfolio.vercel.app/voice-inbox/privacy ；备用 https://github.com/easyrider11/voice-inbox/issues |
+| 5 | 后端上线（可选，见二.4） | 不上线也能过审——App 有完整本机模式。上线后体验更好（腾讯识别、Claude 整理）。两条路：Replit（`docs/deploy-replit.md`，仓库已带 `.replit`）或 Fly.io（`server/Dockerfile` + `fly.toml`）。 |
 | 6 | 截图 | 6.9" 和 6.5" 各至少一组；我可以从模拟器出图，你挑。 |
 | 7 | 审核备注 | 建议写："无需账号。无服务器时 App 完全在本机运行（Apple 语音识别 + 本地规则）。" |
 
