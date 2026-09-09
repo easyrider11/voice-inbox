@@ -30,6 +30,12 @@ open VoiceInbox.xcodeproj
 
 Requires Xcode 26+. The app targets iOS 17+ (SwiftData).
 
+UI is English with a Simplified Chinese translation (`Localizable.xcstrings`); speech recognition language is chosen in Settings (Chinese / English / follow system). For screenshots, DEBUG builds accept `--demo-data` as a launch argument to replace the local store with English sample cards:
+
+```
+xcrun simctl launch <udid> com.langlipro.voiceinbox --demo-data
+```
+
 ### Install on a real iPhone (no App Store)
 
 One-time prerequisite: Xcode → Settings → Accounts must have the Apple ID
