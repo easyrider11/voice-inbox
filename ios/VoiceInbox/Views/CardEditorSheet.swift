@@ -38,26 +38,26 @@ struct CardEditorSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("内容") {
-                    TextField("标题", text: $title)
+                Section("Content") {
+                    TextField("Title", text: $title)
                     switch target {
                     case .todo:
-                        TextField("说明", text: $details)
+                        TextField("Notes", text: $details)
                         ForEach($lines) { $line in
-                            TextField("子任务", text: $line.text)
+                            TextField("Subtask", text: $line.text)
                         }
                         .onDelete { lines.remove(atOffsets: $0) }
-                        Button("添加子任务", systemImage: "plus") {
+                        Button("Add Subtask", systemImage: "plus") {
                             lines.append(Line(text: ""))
                         }
                     case .reminder:
-                        DatePicker("提醒时间", selection: $fireDate)
+                        DatePicker("Remind at", selection: $fireDate)
                     case .idea:
                         ForEach($lines) { $line in
-                            TextField("要点", text: $line.text)
+                            TextField("Point", text: $line.text)
                         }
                         .onDelete { lines.remove(atOffsets: $0) }
-                        Button("添加要点", systemImage: "plus") {
+                        Button("Add Point", systemImage: "plus") {
                             lines.append(Line(text: ""))
                         }
                     }
@@ -65,21 +65,21 @@ struct CardEditorSheet: View {
 
                 // Traceability (PLAN-MVP.md #6): what the AI structured, verbatim.
                 if let sourceTranscript {
-                    Section("原始转写") {
+                    Section("Original Transcript") {
                         Text(sourceTranscript)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("编辑")
+            .navigationTitle("Edit")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存", action: save)
+                    Button("Save", action: save)
                         .fontWeight(.semibold)
                         .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }

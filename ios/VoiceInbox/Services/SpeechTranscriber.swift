@@ -14,9 +14,9 @@ enum SpeechTranscriber {
 
         var errorDescription: String? {
             switch self {
-            case .notAuthorized: "没有语音识别权限。iOS 设置 → Voice Inbox → 语音识别 打开后重试。"
-            case .unavailable: "本机语音识别当前不可用（检查系统语言包或稍后重试）。"
-            case .empty: "没听清内容，再说一次。"
+            case .notAuthorized: String(localized: "Speech recognition isn't allowed. Turn it on in iOS Settings → Voice Inbox → Speech Recognition.")
+            case .unavailable: String(localized: "On-device speech recognition isn't available right now (check the language pack, or try again).")
+            case .empty: String(localized: "Didn't catch that. Try again.")
             }
         }
     }
@@ -34,7 +34,7 @@ enum SpeechTranscriber {
         }
     }
 
-    static func transcribe(fileURL: URL, locale: Locale = Locale(identifier: "zh-CN")) async throws -> Transcript {
+    static func transcribe(fileURL: URL, locale: Locale = RecognitionLanguage.current.locale) async throws -> Transcript {
         guard await requestAuthorization() else { throw Failure.notAuthorized }
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
             throw Failure.unavailable

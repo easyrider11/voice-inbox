@@ -41,3 +41,35 @@ struct LocalStructurerTests {
         #expect(out.intent == "unclassified")
     }
 }
+
+struct LocalStructurerEnglishTests {
+    let now = Date(timeIntervalSince1970: 1_788_600_000)
+    let calendar = Calendar(identifier: .gregorian)
+
+    @Test func englishReminderInMinutes() throws {
+        let out = LocalStructurer.structure("Remind me to drink water in 10 minutes", now: now, calendar: calendar)
+        #expect(out.intent == "reminder")
+        #expect(out.payload.title == "drink water in 10 minutes")
+        let fire = try #require(out.payload.fireAt.flatMap { ISO8601DateFormatter().date(from: $0) })
+        #expect(abs(fire.timeIntervalSince(now) - 600) < 1)
+    }
+
+    @Test func englishTodoSplits() {
+        let out = LocalStructurer.structure("Three things to do today, first send the doc, then finish the upload code, then gym", now: now, calendar: calendar)
+        #expect(out.intent == "todo")
+        #expect(out.payload.subtasks?.count == 3)
+    }
+
+    @Test func englishIdea() {
+        let out = LocalStructurer.structure("I have an idea: make the inbox an MCP server, so other tools can write into it", now: now, calendar: calendar)
+        #expect(out.intent == "idea")
+        #expect(out.payload.title == "make the inbox an MCP server")
+    }
+
+    @Test func englishMeetingAtThreePm() throws {
+        let out = LocalStructurer.structure("Meeting with the designer tomorrow at 3 pm", now: now, calendar: calendar)
+        #expect(out.intent == "reminder")
+        let fire = try #require(out.payload.fireAt.flatMap { ISO8601DateFormatter().date(from: $0) })
+        #expect(calendar.component(.hour, from: fire) == 15)
+    }
+}

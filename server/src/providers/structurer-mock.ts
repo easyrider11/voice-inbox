@@ -20,7 +20,7 @@ export class MockStructurer implements Structurer {
       intent: "reminder",
       confidence: 0.8,
       reminder: {
-        title: firstClause(transcript).replace(/^提醒我?/, ""),
+        title: firstClause(transcript).replace(/^(提醒我?|remind me to |remind me )/i, ""),
         fireAt: guessFireAt(transcript, ctx),
       },
     };
@@ -31,7 +31,7 @@ export class MockStructurer implements Structurer {
 
     if (/想法|idea|可以做|不如/i.test(transcript)) {
       let bullets = clauses(transcript).slice(1);
-      let title = firstClause(transcript).replace(/^我有个想法[，,]?/, "");
+      let title = firstClause(transcript).replace(/^(我有个想法[，,]?|i have an idea[:,]? ?|idea[:,]? ?)/i, "");
       if (!title) {
         title = bullets[0] ?? "一个想法";
         bullets = bullets.slice(1);
@@ -44,7 +44,7 @@ export class MockStructurer implements Structurer {
       };
     }
 
-    if (/要做|第一|然后|先|再/.test(transcript)) {
+    if (/要做|第一|然后|先|再|to ?do|need to|have to|first|then|tasks?/i.test(transcript)) {
       const parts = clauses(transcript);
       return {
         ...base,
@@ -58,7 +58,7 @@ export class MockStructurer implements Structurer {
       };
     }
 
-    if (/[两一二三四五六七八九十\d]点/.test(transcript) && /明天|后天|早上|上午|下午|晚上/.test(transcript)) {
+    if ((/[两一二三四五六七八九十\d]点/.test(transcript) && /明天|后天|早上|上午|下午|晚上/.test(transcript)) || /\bat \d{1,2}(:\d{2})? ?(am|pm)/i.test(transcript) || /\bin \d+ (minutes?|mins?|hours?)/i.test(transcript)) {
       return reminderResult;
     }
 
@@ -88,6 +88,26 @@ function firstClause(text: string): string {
 
 /** Very rough "明天下午三点" → ISO timestamp; the real resolver is Claude's job. */
 function guessFireAt(transcript: string, ctx: StructureContext): string | null {
+  const now0 = new Date(ctx.now);
+  const enRel = transcript.match(/\bin (\d+) (minutes?|mins?|hours?)/i);
+  if (enRel) {
+    const n = Number(enRel[1]);
+    const secs = enRel[2]!.toLowerCase().startsWith("hour") ? n * 3600 : n * 60;
+    return new Date(now0.getTime() + secs * 1000).toISOString();
+  }
+  const enAt = transcript.match(/\bat (\d{1,2})(?::(\d{2}))? ?(am|pm)?/i);
+  if (enAt) {
+    let hour = Number(enAt[1]);
+    const minute = enAt[2] ? Number(enAt[2]) : 0;
+    const ampm = enAt[3]?.toLowerCase();
+    if (ampm === "pm" && hour < 12) hour += 12;
+    if (ampm === "am" && hour === 12) hour = 0;
+    const fire = new Date(now0);
+    if (/tomorrow/i.test(transcript)) fire.setDate(fire.getDate() + 1);
+    fire.setHours(hour, minute, 0, 0);
+    if (fire <= now0) fire.setDate(fire.getDate() + 1);
+    return fire.toISOString();
+  }
   const minuteMatch = transcript.match(/([一二三四五六七八九十两\d]+)分钟后/);
   if (minuteMatch) {
     const minuteNumerals: Record<string, number> = {

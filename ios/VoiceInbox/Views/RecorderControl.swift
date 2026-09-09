@@ -125,7 +125,7 @@ struct RecorderControl: View {
             }
             .offset(CGSize(width: -110, height: 0))
             .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
-            .accessibilityLabel("取消录音")
+            .accessibilityLabel("Cancel recording")
         }
     }
 
@@ -160,8 +160,8 @@ struct RecorderControl: View {
             DragGesture(minimumDistance: 0)
                 .updating($isPressed) { _, state, _ in state = true }
         )
-        .accessibilityLabel(recorder.isRecording ? "停止录音" : "录音")
-        .accessibilityHint(recorder.isRecording ? "轻点停止并保存" : "轻点开始录音")
+        .accessibilityLabel(recorder.isRecording ? "Stop recording" : "Record")
+        .accessibilityHint(recorder.isRecording ? "Tap to stop and save" : "Tap to start recording")
         .accessibilityAddTraits(.isButton)
     }
 
@@ -174,10 +174,10 @@ struct RecorderControl: View {
 
     private var hintText: String {
         switch kind {
-        case nil: "轻点说话 · 长按持续录音"
-        case .tapped: "再轻点一下停止"
-        case .holding: isOverLock ? "松手锁定" : "松手发送 · 拖到锁图标可锁定"
-        case .locked: "已锁定 · 轻点停止，点 × 取消"
+        case nil: String(localized: "Tap to talk · Hold to keep recording")
+        case .tapped: String(localized: "Tap again to stop")
+        case .holding: isOverLock ? String(localized: "Release to lock") : String(localized: "Release to send · Drag to the lock to go hands-free")
+        case .locked: String(localized: "Locked · Tap to stop, × to cancel")
         }
     }
 

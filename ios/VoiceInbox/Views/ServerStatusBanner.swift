@@ -13,14 +13,14 @@ struct ServerStatusBanner: View {
                     .foregroundStyle(.red)
                     .padding(.top, 1)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("连不上服务器")
+                    Text("Can't reach the server")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                     Text(message)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
-                    Text("打开设置检查地址 →")
+                    Text("Open Settings to check the address →")
                         .font(.footnote)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.accent)
@@ -32,6 +32,6 @@ struct ServerStatusBanner: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("连不上服务器，打开设置")
+        .accessibilityLabel("Can't reach the server. Open Settings.")
     }
 }

@@ -72,7 +72,7 @@ private struct SubtaskRow: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(subtask.done ? "取消完成 \(subtask.text)" : "完成 \(subtask.text)")
+        .accessibilityLabel(subtask.done ? "Mark \(subtask.text) not done" : "Mark \(subtask.text) done")
     }
 }
 
@@ -95,7 +95,7 @@ struct ReminderCardView: View {
                     .foregroundStyle(card.done ? Color.accent : Color(.systemGray3))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(card.done ? "标记未完成" : "标记完成")
+            .accessibilityLabel(card.done ? "Mark not done" : "Mark done")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(card.title)
@@ -120,10 +120,10 @@ struct ReminderCardView: View {
 
     private var formattedFireDate: String {
         if Calendar.current.isDateInToday(card.fireDate) {
-            return "今天 " + card.fireDate.formatted(date: .omitted, time: .shortened)
+            return String(localized: "Today") + " " + card.fireDate.formatted(date: .omitted, time: .shortened)
         }
         if Calendar.current.isDateInTomorrow(card.fireDate) {
-            return "明天 " + card.fireDate.formatted(date: .omitted, time: .shortened)
+            return String(localized: "Tomorrow") + " " + card.fireDate.formatted(date: .omitted, time: .shortened)
         }
         return card.fireDate.formatted(date: .abbreviated, time: .shortened)
     }
@@ -149,7 +149,7 @@ struct IdeaCardView: View {
                     .lineLimit(2)
                 Spacer()
                 if let stackCount, stackCount > 1 {
-                    Text("\(stackCount) 条")
+                    Text("\(stackCount) ideas")
                         .font(.caption2)
                         .fontWeight(.semibold)
                         .padding(.horizontal, 8)
@@ -171,7 +171,7 @@ struct IdeaCardView: View {
                 }
             }
             if card.bullets.count > 3 {
-                Text("还有 \(card.bullets.count - 3) 条要点")
+                Text("\(card.bullets.count - 3) more points")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -233,7 +233,7 @@ struct IdeaStackView: View {
                 anchor: .bottom
             )
             .gesture(count > 1 ? swipeGesture : nil)
-            .accessibilityHint(count > 1 ? "左右滑动查看下一条想法" : "")
+            .accessibilityHint(count > 1 ? "Swipe left or right for the next idea" : "")
     }
 
     private func behindCard(

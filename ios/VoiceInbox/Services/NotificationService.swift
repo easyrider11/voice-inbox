@@ -14,12 +14,12 @@ enum NotificationService {
     static func registerCategories() {
         let done = UNNotificationAction(
             identifier: doneActionID,
-            title: "完成",
+            title: String(localized: "Done"),
             options: []
         )
         let snooze = UNNotificationAction(
             identifier: snoozeActionID,
-            title: "稍后 10 分钟",
+            title: String(localized: "Snooze 10 min"),
             options: []
         )
         let category = UNNotificationCategory(
@@ -50,7 +50,7 @@ enum NotificationService {
 
         let content = UNMutableNotificationContent()
         content.title = card.title
-        content.body = "来自语音收件箱的提醒"
+        content.body = String(localized: "Reminder from Voice Inbox")
         content.sound = .default
         content.categoryIdentifier = reminderCategoryID
 

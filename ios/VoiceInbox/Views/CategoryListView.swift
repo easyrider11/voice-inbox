@@ -9,10 +9,10 @@ enum InboxCategory: String, Hashable {
 
     var title: String {
         switch self {
-        case .today: "今天"
-        case .todos: "待办"
-        case .reminders: "提醒"
-        case .ideas: "想法"
+        case .today: String(localized: "Today")
+        case .todos: String(localized: "To-dos")
+        case .reminders: String(localized: "Reminders")
+        case .ideas: String(localized: "Ideas")
         }
     }
 }
@@ -49,43 +49,43 @@ struct CategoryListView: View {
             let overdue = reminders.filter { !$0.done && $0.fireDate < .now && !Calendar.current.isDateInToday($0.fireDate) }
             let due = reminders.filter { Calendar.current.isDateInToday($0.fireDate) }
             if overdue.isEmpty && due.isEmpty {
-                emptyText("今天没有到期的提醒")
+                emptyText(String(localized: "No reminders due today"))
             }
             if !overdue.isEmpty {
-                sectionHeader("逾期")
+                sectionHeader(String(localized: "Overdue"))
                 ForEach(overdue) { card in
                     reminderRow(card)
                 }
             }
             if !due.isEmpty {
                 if !overdue.isEmpty {
-                    sectionHeader("今天")
+                    sectionHeader(String(localized: "Today"))
                 }
                 ForEach(due) { card in
                     reminderRow(card)
                 }
             }
         case .todos:
-            if todos.isEmpty { emptyText("还没有待办") }
+            if todos.isEmpty { emptyText(String(localized: "No to-dos yet")) }
             ForEach(todos) { card in
                 TodoCardView(card: card)
                     .contextMenu {
-                        Button("编辑", systemImage: "pencil") { onEdit(.todo(card)) }
-                        Button("删除", systemImage: "trash", role: .destructive) { delete(.todo(card)) }
+                        Button("Edit", systemImage: "pencil") { onEdit(.todo(card)) }
+                        Button("Delete", systemImage: "trash", role: .destructive) { delete(.todo(card)) }
                     }
             }
         case .reminders:
-            if reminders.isEmpty { emptyText("还没有提醒") }
+            if reminders.isEmpty { emptyText(String(localized: "No reminders yet")) }
             ForEach(reminders) { card in
                 reminderRow(card)
             }
         case .ideas:
-            if ideas.isEmpty { emptyText("还没有想法") }
+            if ideas.isEmpty { emptyText(String(localized: "No ideas yet")) }
             ForEach(ideas) { card in
                 IdeaCardView(card: card)
                     .contextMenu {
-                        Button("编辑", systemImage: "pencil") { onEdit(.idea(card)) }
-                        Button("删除", systemImage: "trash", role: .destructive) { delete(.idea(card)) }
+                        Button("Edit", systemImage: "pencil") { onEdit(.idea(card)) }
+                        Button("Delete", systemImage: "trash", role: .destructive) { delete(.idea(card)) }
                     }
             }
         }
@@ -96,8 +96,8 @@ struct CategoryListView: View {
             toggleReminder(card)
         }
         .contextMenu {
-            Button("编辑", systemImage: "pencil") { onEdit(.reminder(card)) }
-            Button("删除", systemImage: "trash", role: .destructive) { delete(.reminder(card)) }
+            Button("Edit", systemImage: "pencil") { onEdit(.reminder(card)) }
+            Button("Delete", systemImage: "trash", role: .destructive) { delete(.reminder(card)) }
         }
     }
 

@@ -13,9 +13,9 @@ final class AudioRecorderService {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                "没有麦克风权限。请在设置中允许 Voice Inbox 使用麦克风。"
+                String(localized: "No microphone access. Allow it for Voice Inbox in Settings.")
             case .failedToStart:
-                "录音启动失败，请重试。"
+                String(localized: "Couldn't start recording. Try again.")
             }
         }
     }

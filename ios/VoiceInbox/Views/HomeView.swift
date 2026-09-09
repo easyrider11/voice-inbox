@@ -59,7 +59,7 @@ struct HomeView: View {
                     onError: { errorMessage = $0 }
                 )
             }
-            .navigationTitle("收件箱")
+            .navigationTitle("Inbox")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -67,7 +67,7 @@ struct HomeView: View {
                     } label: {
                         Image(systemName: "gearshape")
                     }
-                    .accessibilityLabel("设置")
+                    .accessibilityLabel("Settings")
                 }
             }
             .navigationDestination(for: InboxCategory.self) { category in
@@ -90,40 +90,40 @@ struct HomeView: View {
             }
         }
         .confirmationDialog(
-            "删除这张卡片？",
+            "Delete this card?",
             isPresented: cardDeleteBinding,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) {
+            Button("Delete", role: .destructive) {
                 if let target = pendingCardDelete {
                     deleteCard(target)
                 }
                 pendingCardDelete = nil
             }
-            Button("取消", role: .cancel) { pendingCardDelete = nil }
+            Button("Cancel", role: .cancel) { pendingCardDelete = nil }
         }
         .confirmationDialog(
-            "删除这条录音？音频将一并删除。",
+            "Delete this recording? The audio will be deleted too.",
             isPresented: captureDeleteBinding,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) {
+            Button("Delete", role: .destructive) {
                 if let capture = pendingCaptureDelete {
                     delete(capture)
                 }
                 pendingCaptureDelete = nil
             }
-            Button("取消", role: .cancel) { pendingCaptureDelete = nil }
+            Button("Cancel", role: .cancel) { pendingCaptureDelete = nil }
         }
-        .alert("这条没处理成功", isPresented: failedBinding, presenting: failedCapture) { capture in
-            Button("重试") { pipeline.run(capture, in: modelContext) }
-            Button("删除", role: .destructive) { delete(capture) }
-            Button("好", role: .cancel) {}
+        .alert("This capture failed", isPresented: failedBinding, presenting: failedCapture) { capture in
+            Button("Retry") { pipeline.run(capture, in: modelContext) }
+            Button("Delete", role: .destructive) { delete(capture) }
+            Button("OK", role: .cancel) {}
         } message: { capture in
-            Text(capture.lastError ?? "未知错误")
+            Text(capture.lastError ?? "Unknown error")
         }
-        .alert("无法录音", isPresented: showingError) {
-            Button("好", role: .cancel) {}
+        .alert("Can't record", isPresented: showingError) {
+            Button("OK", role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }
@@ -208,7 +208,7 @@ struct HomeView: View {
     @ViewBuilder
     private var inboxStream: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("最近")
+            Text("Recent")
                 .font(.title3)
                 .fontWeight(.bold)
 
@@ -230,11 +230,11 @@ struct HomeView: View {
                     }
                     .contextMenu {
                         if capture.status == .failed {
-                            Button("重试", systemImage: "arrow.clockwise") {
+                            Button("Retry", systemImage: "arrow.clockwise") {
                                 pipeline.run(capture, in: modelContext)
                             }
                         }
-                        Button("删除", systemImage: "trash", role: .destructive) {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
                             pendingCaptureDelete = capture
                         }
                     }
@@ -247,14 +247,14 @@ struct HomeView: View {
                     case .todo(let card):
                         TodoCardView(card: card)
                             .contextMenu {
-                                Button("编辑", systemImage: "pencil") { editing = .todo(card) }
-                                Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .todo(card) }
+                                Button("Edit", systemImage: "pencil") { editing = .todo(card) }
+                                Button("Delete", systemImage: "trash", role: .destructive) { pendingCardDelete = .todo(card) }
                             }
                     case .reminder(let card):
                         ReminderCardView(card: card) { toggleReminder(card) }
                             .contextMenu {
-                                Button("编辑", systemImage: "pencil") { editing = .reminder(card) }
-                                Button("删除", systemImage: "trash", role: .destructive) { pendingCardDelete = .reminder(card) }
+                                Button("Edit", systemImage: "pencil") { editing = .reminder(card) }
+                                Button("Delete", systemImage: "trash", role: .destructive) { pendingCardDelete = .reminder(card) }
                             }
                     case .ideaStack(let cards):
                         NavigationLink(value: InboxCategory.ideas) {
@@ -402,10 +402,10 @@ private struct SmartListTile: View {
 private struct EmptyInboxCard: View {
     var body: some View {
         VStack(spacing: 6) {
-            Text("还没有内容")
+            Text("Nothing here yet")
                 .font(.subheadline)
                 .fontWeight(.semibold)
-            Text("轻点中间的按钮，说出要做的事、提醒或想法")
+            Text("Tap the button and say a task, a reminder, or an idea")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -442,7 +442,7 @@ private struct CaptureRow: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(isPlaying ? "停止播放" : "播放录音")
+            .accessibilityLabel(isPlaying ? "Stop playback" : "Play recording")
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(rowTitle)
@@ -471,7 +471,7 @@ private struct CaptureRow: View {
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("重试处理")
+                .accessibilityLabel("Retry processing")
             }
 
             Text(statusLabel)
@@ -492,16 +492,16 @@ private struct CaptureRow: View {
         if let title = capture.decodedPayload?.title, !title.isEmpty {
             return title
         }
-        return "语音速记"
+        return String(localized: "Voice note")
     }
 
     private var subtitle: String {
         let meta = "\(formattedDuration) · \(capture.createdAt.formatted(date: .omitted, time: .shortened))"
         if capture.status == .awaitingConfirm {
-            return meta + " · 轻点确认"
+            return meta + " · " + String(localized: "Tap to confirm")
         }
         if capture.status == .failed, let error = capture.lastError {
-            return error + " · 轻点看详情"
+            return error + " · " + String(localized: "Tap for details")
         }
         return meta
     }
@@ -513,13 +513,13 @@ private struct CaptureRow: View {
 
     private var statusLabel: String {
         switch capture.status {
-        case .recorded: "待处理"
-        case .uploading: "上传中"
-        case .processing: "整理中"
-        case .awaitingConfirm: "待确认"
-        case .saved: "已保存"
-        case .failed: "失败"
-        case .recording: "录音中"
+        case .recorded: String(localized: "Queued")
+        case .uploading: String(localized: "Uploading")
+        case .processing: String(localized: "Processing")
+        case .awaitingConfirm: String(localized: "To confirm")
+        case .saved: String(localized: "Saved")
+        case .failed: String(localized: "Failed")
+        case .recording: String(localized: "Recording")
         }
     }
 

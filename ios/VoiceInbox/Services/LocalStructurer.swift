@@ -16,7 +16,7 @@ enum LocalStructurer {
         let first = parts.first ?? transcript
 
         func reminder() -> Output {
-            let title = first.replacingOccurrences(of: #"^提醒我?"#, with: "", options: .regularExpression)
+            let title = first.replacingOccurrences(of: #"^(提醒我?|remind me to |remind me )"#, with: "", options: [.regularExpression, .caseInsensitive])
             return Output(
                 intent: "reminder",
                 confidence: 0.8,
@@ -30,7 +30,7 @@ enum LocalStructurer {
 
         if matches(transcript, #"想法|idea|可以做|不如"#) {
             var bullets = Array(parts.dropFirst())
-            var title = first.replacingOccurrences(of: #"^我有个想法[，,]?"#, with: "", options: .regularExpression)
+            var title = first.replacingOccurrences(of: #"^(我有个想法[，,]?|i have an idea[:,]? ?|idea[:,]? ?)"#, with: "", options: [.regularExpression, .caseInsensitive])
             if title.isEmpty {
                 title = bullets.first ?? "一个想法"
                 bullets = Array(bullets.dropFirst())
@@ -38,7 +38,7 @@ enum LocalStructurer {
             return Output(intent: "idea", confidence: 0.75, payload: CaptureAPI.Payload(title: title, bullets: bullets))
         }
 
-        if matches(transcript, #"要做|第一|然后|先|再"#) {
+        if matches(transcript, #"要做|第一|然后|先|再|to ?do|need to|have to|first|then|tasks?"#) {
             let subtasks = parts.dropFirst()
                 .map { $0.replacingOccurrences(of: #"^第[一二三四五六七八九十]"#, with: "", options: .regularExpression).trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
@@ -49,7 +49,8 @@ enum LocalStructurer {
             )
         }
 
-        if matches(transcript, #"[两一二三四五六七八九十0-9]点"#), matches(transcript, #"明天|后天|早上|上午|下午|晚上"#) {
+        if (matches(transcript, #"[两一二三四五六七八九十0-9]点"#) && matches(transcript, #"明天|后天|早上|上午|下午|晚上"#))
+            || matches(transcript, #"\bat \d{1,2}(:\d{2})? ?(am|pm)"#) || matches(transcript, #"\bin \d+ (minutes?|mins?|hours?)"#) {
             return reminder()
         }
 
@@ -81,6 +82,30 @@ enum LocalStructurer {
     /// "十分钟后" → now + 10 min; "明天下午三点" → tomorrow 15:00. ISO-8601 string.
     static func guessFireAt(_ transcript: String, now: Date, calendar: Calendar) -> String? {
         let iso = ISO8601DateFormatter()
+        // English: "in 10 minutes" / "in 2 hours"
+        if let m = transcript.range(of: #"\bin (\d+) (minutes?|mins?|hours?)"#, options: [.regularExpression, .caseInsensitive]) {
+            let parts = transcript[m].split(separator: " ")
+            if parts.count >= 3, let n = Int(parts[1]) {
+                let seconds = parts[2].lowercased().hasPrefix("hour") ? n * 3600 : n * 60
+                return iso.string(from: now.addingTimeInterval(TimeInterval(seconds)))
+            }
+        }
+        // English: "at 3 pm" / "at 15:30" (+ "tomorrow")
+        if let m = transcript.range(of: #"\bat (\d{1,2})(:(\d{2}))? ?(am|pm)?"#, options: [.regularExpression, .caseInsensitive]) {
+            let text = String(transcript[m]).lowercased()
+            let digits = text.replacingOccurrences(of: #"[^0-9:]"#, with: "", options: .regularExpression).split(separator: ":")
+            if let first = digits.first, var hour = Int(first) {
+                let minute = digits.count > 1 ? Int(digits[1]) ?? 0 : 0
+                if text.contains("pm"), hour < 12 { hour += 12 }
+                if text.contains("am"), hour == 12 { hour = 0 }
+                var base = now
+                if transcript.lowercased().contains("tomorrow"), let t = calendar.date(byAdding: .day, value: 1, to: base) { base = t }
+                if var dated = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: base) {
+                    if dated <= now, let t = calendar.date(byAdding: .day, value: 1, to: dated) { dated = t }
+                    return iso.string(from: dated)
+                }
+            }
+        }
         if let m = transcript.range(of: #"([一二三四五六七八九十两0-9]+)分钟后"#, options: .regularExpression) {
             let token = transcript[m].dropLast(3)
             if let minutes = number(from: token) {

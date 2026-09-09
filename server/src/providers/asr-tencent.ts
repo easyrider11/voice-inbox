@@ -33,13 +33,20 @@ export class TencentASRProvider implements ASRProvider {
 
   constructor(private readonly cfg: TencentConfig) {}
 
+  /** Engine by the client's language hint: English → 16k_en; otherwise the
+   *  configured Chinese engine (16k_zh-PY handles Mandarin/English/Cantonese mixing). */
+  private engineFor(localeHint?: string): string {
+    if (localeHint && localeHint.toLowerCase().startsWith("en")) return "16k_en";
+    return this.cfg.engine;
+  }
+
   async transcribe(audio: AudioInput, opts: TranscribeOptions): Promise<Transcription> {
     if (audio.data.byteLength > 3 * 1024 * 1024) {
       throw new Error("Tencent SentenceRecognition rejects audio over 3 MB; chunking lands with meeting mode (M4)");
     }
 
     const payload = JSON.stringify({
-      EngSerViceType: this.cfg.engine,
+      EngSerViceType: this.engineFor(opts.localeHint),
       SourceType: 1,
       VoiceFormat: audio.format,
       Data: audio.data.toString("base64"),
@@ -72,7 +79,7 @@ export class TencentASRProvider implements ASRProvider {
 
     return {
       text: body.Response.Result ?? "",
-      language: this.cfg.engine.includes("zh") ? "zh" : this.cfg.engine.replace("16k_", ""),
+      language: this.engineFor(opts.localeHint).includes("zh") ? "zh" : this.engineFor(opts.localeHint).replace("16k_", ""),
       durationMs: body.Response.AudioDuration,
     };
   }

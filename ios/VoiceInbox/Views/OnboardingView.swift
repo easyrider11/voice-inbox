@@ -22,9 +22,9 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 28)
 
-            Text("语音收件箱")
+            Text("Voice Inbox")
                 .font(.system(size: 30, weight: .bold))
-            Text("想到什么，说出来就行")
+            Text("Whatever comes to mind, just say it.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
@@ -32,18 +32,18 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 18) {
                 OnboardingRow(
                     symbol: "waveform",
-                    title: "说话即记录",
-                    detail: "轻点中间的按钮说一句，长按持续录，拖到锁图标免按住"
+                    title: String(localized: "Speak to capture"),
+                    detail: String(localized: "Tap the button and talk. Hold to keep recording, drag to the lock to go hands-free.")
                 )
                 OnboardingRow(
                     symbol: "sparkles",
-                    title: "AI 自动整理",
-                    detail: "说的话自动分类成待办、提醒或想法，你只需确认"
+                    title: String(localized: "AI sorts it out"),
+                    detail: String(localized: "What you say becomes a to-do, a reminder, or an idea. You just confirm.")
                 )
                 OnboardingRow(
                     symbol: "lock.fill",
-                    title: "数据留在你手里",
-                    detail: "录音只在转写期间经过服务器，处理完即删；结果只存在这台设备上"
+                    title: String(localized: "Your data stays with you"),
+                    detail: String(localized: "Audio passes through the server only while being transcribed, then it's deleted. Results live only on this device.")
                 )
             }
             .padding(.horizontal, 36)
@@ -52,7 +52,7 @@ struct OnboardingView: View {
             Spacer()
 
             Button(action: onDone) {
-                Text("开始使用")
+                Text("Get Started")
                     .font(.headline)
                     .foregroundStyle(Color.onAccent)
                     .frame(maxWidth: .infinity)
@@ -63,7 +63,7 @@ struct OnboardingView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 8)
 
-            Text("首次录音时会请求麦克风权限")
+            Text("The first recording asks for microphone access")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 16)

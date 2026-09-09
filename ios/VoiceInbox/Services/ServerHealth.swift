@@ -47,7 +47,7 @@ final class ServerHealthMonitor {
                 }
                 state = .ok
             } else {
-                state = .unreachable("服务器返回了异常状态（\(Self.address)）")
+                state = .unreachable("The server returned an unexpected status (\(Self.address))")
             }
         } catch {
             state = .unreachable(Self.humanMessage(for: error))
@@ -69,11 +69,11 @@ final class ServerHealthMonitor {
         switch urlError.code {
         case .cannotConnectToHost, .timedOut, .cannotFindHost, .dnsLookupFailed,
              .networkConnectionLost, .notConnectedToInternet:
-            return "\(address) 没有响应。检查：手机和 Mac 在同一 Wi-Fi；iOS 设置 → Voice Inbox → 本地网络 已打开。（错误码 \(urlError.code.rawValue)）"
+            return "\(address) didn't respond. Check that the phone and Mac are on the same Wi-Fi and that iOS Settings → Voice Inbox → Local Network is on. (Error \(urlError.code.rawValue))"
         case .appTransportSecurityRequiresSecureConnection:
-            return "系统拒绝了 http 连接（ATS）。（错误码 \(urlError.code.rawValue)）"
+            return "The system refused the http connection (ATS). (Error \(urlError.code.rawValue))"
         default:
-            return "\(urlError.localizedDescription)（错误码 \(urlError.code.rawValue)）"
+            return "\(urlError.localizedDescription) (Error \(urlError.code.rawValue))"
         }
     }
 }

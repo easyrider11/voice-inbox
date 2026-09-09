@@ -3,8 +3,8 @@ import AppIntents
 /// App Shortcut / Action Button entry (PLAN-MVP.md #8, PROJECT.md §3.1):
 /// one press opens the app straight into recording.
 struct StartCaptureIntent: AppIntent {
-    static let title: LocalizedStringResource = "开始记一条"
-    static let description = IntentDescription("打开 Voice Inbox 并立刻开始录音")
+    static let title: LocalizedStringResource = "Start a Capture"
+    static let description = IntentDescription("Opens Voice Inbox and starts recording right away")
     static let openAppWhenRun = true
 
     @MainActor
@@ -19,10 +19,10 @@ struct VoiceInboxShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: StartCaptureIntent(),
             phrases: [
-                "用 \(.applicationName) 记一条",
-                "\(.applicationName) 开始录音",
+                "Capture with \(.applicationName)",
+                "Start recording in \(.applicationName)",
             ],
-            shortTitle: "记一条",
+            shortTitle: "Capture",
             systemImageName: "mic.fill"
         )
     }

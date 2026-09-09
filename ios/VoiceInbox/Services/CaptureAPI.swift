@@ -42,9 +42,9 @@ struct CaptureAPI {
 
         var errorDescription: String? {
             switch self {
-            case .badStatus(let code): "服务器返回 \(code)"
+            case .badStatus(let code): "Server returned \(code)"
             case .processingFailed(let message): message
-            case .timedOut: "处理超时，请重试"
+            case .timedOut: String(localized: "Processing timed out. Try again.")
             }
         }
     }
@@ -70,11 +70,12 @@ struct CaptureAPI {
 
     /// Pass `transcript` when the phone already transcribed the audio on-device;
     /// the server then skips its own ASR and only structures the text.
-    func process(captureId: String, timezone: String, transcript: String? = nil, language: String? = nil) async throws {
+    func process(captureId: String, timezone: String, localeHint: String? = nil, transcript: String? = nil, language: String? = nil) async throws {
         var request = URLRequest(url: baseURL.appending(path: "v1/captures/\(captureId)/process"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         var body: [String: String] = ["timezone": timezone]
+        if let localeHint { body["localeHint"] = localeHint }
         if let transcript { body["transcript"] = transcript }
         if let language { body["language"] = language }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

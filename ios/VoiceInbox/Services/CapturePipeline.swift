@@ -18,7 +18,7 @@ final class CapturePipeline {
 
     private func process(_ capture: CaptureRecord, in context: ModelContext) async {
         guard let filename = capture.audioFilename, AudioStore.exists(filename) else {
-            fail(capture, in: context, message: "本地音频不存在")
+            fail(capture, in: context, message: String(localized: "The local audio file is missing"))
             return
         }
 
@@ -45,6 +45,7 @@ final class CapturePipeline {
             try await api.process(
                 captureId: created.captureId,
                 timezone: TimeZone.current.identifier,
+                localeHint: RecognitionLanguage.current.hint,
                 transcript: local?.text,
                 language: local?.language
             )
@@ -59,7 +60,7 @@ final class CapturePipeline {
                     return
                 }
                 if status.status == "failed" {
-                    throw CaptureAPI.APIError.processingFailed(status.error ?? "处理失败")
+                    throw CaptureAPI.APIError.processingFailed(status.error ?? String(localized: "Processing failed"))
                 }
             }
             throw CaptureAPI.APIError.timedOut
@@ -79,7 +80,7 @@ final class CapturePipeline {
                 fail(
                     capture,
                     in: context,
-                    message: ServerHealthMonitor.humanMessage(for: error) + "；本机处理也失败：" + localError.localizedDescription
+                    message: ServerHealthMonitor.humanMessage(for: error) + "; on-device processing also failed: " + localError.localizedDescription
                 )
             }
         }

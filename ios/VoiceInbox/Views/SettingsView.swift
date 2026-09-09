@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(ServerConfig.storageKey) private var serverURL = ServerConfig.fallback
+    @AppStorage(RecognitionLanguage.storageKey) private var recognitionLanguage = RecognitionLanguage.system.rawValue
 
     private enum TestState: Equatable {
         case idle
@@ -26,7 +27,7 @@ struct SettingsView: View {
                         .font(.callout.monospaced())
                     Button(action: testConnection) {
                         HStack {
-                            Text("测试连接")
+                            Text("Test Connection")
                             Spacer()
                             switch testState {
                             case .idle:
@@ -44,8 +45,8 @@ struct SettingsView: View {
                     }
                     .disabled(testState == .testing)
                     if case .ok(let asr, let structurer) = testState {
-                        LabeledContent("语音识别", value: asr == "mock" ? "本机识别（Apple，服务器未配置云端）" : providerLabel(asr))
-                        LabeledContent("整理模型", value: structurer == "mock" ? "规则整理（未配置 Claude）" : providerLabel(structurer))
+                        LabeledContent("Speech Recognition", value: asr == "mock" ? String(localized: "On-device (Apple) — no cloud ASR on the server") : providerLabel(asr))
+                        LabeledContent("Structuring", value: structurer == "mock" ? String(localized: "Rules (Claude not configured)") : providerLabel(structurer))
                     }
                     if case .failed(let message) = testState {
                         Text(message)
@@ -53,30 +54,42 @@ struct SettingsView: View {
                             .foregroundStyle(.red)
                     }
                 } header: {
-                    Text("服务器")
+                    Text("Server")
                 } footer: {
-                    Text("手机与 Mac 需在同一 Wi-Fi。模拟器用 127.0.0.1，真机填 Mac 的局域网地址。")
+                    Text("Phone and Mac must be on the same Wi-Fi. Simulator: 127.0.0.1; device: your Mac's Bonjour name or LAN address.")
                 }
 
                 Section {
-                    Button("恢复默认地址") {
+                    Picker("Recognition Language", selection: $recognitionLanguage) {
+                        ForEach(RecognitionLanguage.allCases) { option in
+                            Text(option.title).tag(option.rawValue)
+                        }
+                    }
+                } header: {
+                    Text("Speech")
+                } footer: {
+                    Text("Applies to both on-device recognition and the server. Chinese and English are both supported.")
+                }
+
+                Section {
+                    Button("Reset to Default Address") {
                         serverURL = ServerConfig.fallback
                         testState = .idle
                     }
                 }
 
-                Section("关于") {
-                    LabeledContent("版本", value: "0.1.0 (M3)")
-                    Text("录音只在处理期间经你的服务器转写，处理完即删；整理结果只保存在这台设备上。")
+                Section("About") {
+                    LabeledContent("Version", value: "1.0.0")
+                    Text("Audio passes through your server only while being transcribed and is deleted right after. Results are stored only on this device.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") { dismiss() }
+                    Button("Done") { dismiss() }
                         .fontWeight(.semibold)
                 }
             }
@@ -86,8 +99,8 @@ struct SettingsView: View {
 
     private func providerLabel(_ name: String) -> String {
         switch name {
-        case "mock": "模拟（未配置密钥）"
-        case "tencent": "腾讯云 ASR"
+        case "mock": String(localized: "Mock (no API key)")
+        case "tencent": String(localized: "Tencent Cloud ASR")
         case "claude": "Claude"
         default: name
         }
@@ -108,7 +121,7 @@ struct SettingsView: View {
         Task {
             do {
                 guard let base = URL(string: urlString), base.scheme != nil else {
-                    testState = .failed("地址格式不对，需要以 http:// 开头")
+                    testState = .failed(String(localized: "The address must start with http://"))
                     return
                 }
                 var request = URLRequest(url: base.appending(path: "health"))
@@ -117,7 +130,7 @@ struct SettingsView: View {
                 let health = try JSONDecoder().decode(HealthResponse.self, from: data)
                 testState = .ok(asr: health.providers.asr, structurer: health.providers.structurer)
             } catch {
-                testState = .failed("连不上：\(error.localizedDescription)")
+                testState = .failed("Can't connect: \(error.localizedDescription)")
             }
         }
     }

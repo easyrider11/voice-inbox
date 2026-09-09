@@ -18,9 +18,9 @@ struct ConfirmSheet: View {
 
         var label: String {
             switch self {
-            case .todo: "待办"
-            case .reminder: "提醒"
-            case .idea: "想法"
+            case .todo: String(localized: "To-do")
+            case .reminder: String(localized: "Reminder")
+            case .idea: String(localized: "Idea")
             }
         }
     }
@@ -43,7 +43,7 @@ struct ConfirmSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("类型", selection: $intent) {
+                    Picker("Type", selection: $intent) {
                         ForEach(EditableIntent.allCases) { option in
                             Text(option.label).tag(option)
                         }
@@ -51,37 +51,37 @@ struct ConfirmSheet: View {
                     .pickerStyle(.segmented)
                 } footer: {
                     if let confidence = capture.confidence, capture.intentRaw == "unclassified" {
-                        Text("AI 没有把握自动分类（置信度 \(Int(confidence * 100))%），请手动选择类型")
+                        Text("The AI wasn't confident about the type (\(Int(confidence * 100))%). Pick one.")
                     }
                 }
 
-                Section("内容") {
-                    TextField("标题", text: $title)
+                Section("Content") {
+                    TextField("Title", text: $title)
                     switch intent {
                     case .todo:
-                        TextField("说明", text: $details)
+                        TextField("Notes", text: $details)
                         ForEach($subtasks) { $line in
-                            TextField("子任务", text: $line.text)
+                            TextField("Subtask", text: $line.text)
                         }
                         .onDelete { subtasks.remove(atOffsets: $0) }
-                        Button("添加子任务", systemImage: "plus") {
+                        Button("Add Subtask", systemImage: "plus") {
                             subtasks.append(Line(text: ""))
                         }
                     case .reminder:
-                        DatePicker("提醒时间", selection: $fireDate)
+                        DatePicker("Remind at", selection: $fireDate)
                     case .idea:
                         ForEach($bullets) { $line in
-                            TextField("要点", text: $line.text)
+                            TextField("Point", text: $line.text)
                         }
                         .onDelete { bullets.remove(atOffsets: $0) }
-                        Button("添加要点", systemImage: "plus") {
+                        Button("Add Point", systemImage: "plus") {
                             bullets.append(Line(text: ""))
                         }
                     }
                 }
 
                 if let transcript = capture.transcript {
-                    Section("原始转写") {
+                    Section("Original Transcript") {
                         Text(transcript)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -89,19 +89,19 @@ struct ConfirmSheet: View {
                 }
 
                 Section {
-                    Button("删除这条捕捉", role: .destructive) {
+                    Button("Delete This Capture", role: .destructive) {
                         showingDiscardConfirm = true
                     }
                 }
             }
-            .navigationTitle("确认")
+            .navigationTitle("Confirm")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("稍后") { dismiss() }
+                    Button("Later") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("保存", action: confirm)
+                    Button("Save", action: confirm)
                         .fontWeight(.semibold)
                         .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
@@ -109,12 +109,12 @@ struct ConfirmSheet: View {
         }
         .tint(.accent)
         .confirmationDialog(
-            "删除这条捕捉？录音和转写将一并删除。",
+            "Delete this capture? The recording and transcript will be deleted.",
             isPresented: $showingDiscardConfirm,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive, action: discard)
-            Button("取消", role: .cancel) {}
+            Button("Delete", role: .destructive, action: discard)
+            Button("Cancel", role: .cancel) {}
         }
         .onAppear(perform: loadFromCapture)
     }
