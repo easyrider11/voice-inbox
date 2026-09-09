@@ -128,6 +128,7 @@ struct HomeView: View {
             Text(errorMessage ?? "")
         }
         .task {
+            DemoData.seedIfRequested(in: modelContext)
             NotificationService.updateBadge(with: reminders)
             await serverHealth.check()
         }
