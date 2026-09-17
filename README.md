@@ -79,4 +79,7 @@ npm install
 npm run dev
 ```
 
-Health check: `GET http://localhost:8787/health`. Copy `.env.example` to `.env` for configuration; Postgres/S3 are optional until M2 (`docker compose up -d` starts local Postgres + MinIO).
+Health check: `GET http://localhost:8787/health`. To keep the backend running on the Mac
+permanently (survives logouts and reboots, so the phone and the web app always have a
+server), install the launchd agent: `scripts/server-agent.sh install` (`status` /
+`uninstall` to check or remove). Copy `.env.example` to `.env` for configuration; Postgres/S3 are optional until M2 (`docker compose up -d` starts local Postgres + MinIO).
