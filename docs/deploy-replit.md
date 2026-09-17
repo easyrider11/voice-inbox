@@ -22,4 +22,4 @@ Replit 工作区左侧 Git 面板 → Pull，即可拉取 GitHub 上的新提交
 ## 上架前
 
 把 `ios/VoiceInbox/Services/ServerConfig.swift` 里 Release 构建的默认地址改成这个公网地址
-（Debug 构建保留 `MacBook-Air-2.local`），重新打包提交审核。
+（Debug 构建保留 `MacBook-Air-3.local`），重新打包提交审核。

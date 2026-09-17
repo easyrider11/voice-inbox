@@ -1,4 +1,7 @@
 import Fastify from "fastify";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config.js";
 import { MockASRProvider } from "./providers/asr-mock.js";
 import { TencentASRProvider } from "./providers/asr-tencent.js";
@@ -73,6 +76,36 @@ const notImplemented = (milestone: string) => async () => {
 
 app.post("/v1/auth/apple", notImplemented("M5"));
 app.get("/v1/me/usage", notImplemented("M5"));
+
+// The web app (../web) is served from the same origin as the API, so the
+// browser needs no CORS and can be installed as a PWA. No dependency needed.
+const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../web");
+const mime: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".webmanifest": "application/manifest+json",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+};
+app.get("/*", async (req, reply) => {
+  const requested = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  const rel = requested === "/" ? "index.html" : requested.replace(/^\/+/, "");
+  const file = path.resolve(webRoot, rel);
+  if (!file.startsWith(webRoot + path.sep)) return reply.code(404).send({ code: "not_found" });
+  try {
+    const body = await readFile(file);
+    const type = mime[path.extname(file)] ?? "application/octet-stream";
+    reply.header("content-type", type);
+    if (path.extname(file) === ".js" && rel === "sw.js") reply.header("service-worker-allowed", "/");
+    // no-cache = revalidate on every load; a stale shell is worse than a few KB of transfer.
+      reply.header("cache-control", "no-cache");
+    return reply.send(body);
+  } catch {
+    return reply.code(404).send({ code: "not_found", message: `no such file: ${rel}` });
+  }
+});
 
 try {
   // 0.0.0.0 so a phone on the same LAN can reach the dev server (PLAN-MVP.md P1).

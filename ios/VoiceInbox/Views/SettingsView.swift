@@ -20,7 +20,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("http://MacBook-Air-2.local:8787", text: $serverURL)
+                    TextField("http://MacBook-Air-3.local:8787", text: $serverURL)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()

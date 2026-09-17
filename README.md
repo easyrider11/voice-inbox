@@ -6,7 +6,8 @@ An AI voice inbox for knowledge workers: talk to the single button at the center
 
 - Project document: [PROJECT.md](PROJECT.md) (中文版: [PROJECT.zh-CN.md](PROJECT.zh-CN.md))
 - iOS app: [`ios/`](ios/) — SwiftUI + SwiftData, generated with XcodeGen
-- Backend: [`server/`](server/) — TypeScript + Fastify (thin: auth, upload URLs, AI orchestration, quotas)
+- Backend: [`server/`](server/) — TypeScript + Fastify (thin: auth, upload URLs, AI orchestration, quotas); also serves the web app
+- Web app: [`web/`](web/) — vanilla HTML/CSS/JS PWA with the same flow, for use on a computer
 
 ## Status
 
@@ -50,8 +51,25 @@ Builds with development signing and installs directly via `devicectl`
 (defaults to Lang's iPhone 14 Pro; pass another UDID as the first argument).
 Free-team signatures last 7 days — rerun the script to renew. On the phone,
 set 设置 → Voice Inbox 的服务器地址为 Mac 的局域网 IP（默认已填
-`http://MacBook-Air-2.local:8787`——用 Mac 的 Bonjour 主机名而不是 IP，换 Wi-Fi 也不用改；
+`http://MacBook-Air-3.local:8787`——用 Mac 的 Bonjour 主机名而不是 IP，换 Wi-Fi 也不用改；
 如果 Mac 改了名字，在设置页改地址并测试连接）。
+
+### Web app (use it on a computer)
+
+The same product runs in the browser, served by the backend from [`web/`](web/):
+start the server, then open **http://localhost:8787** on the Mac (or
+`http://MacBook-Air-3.local:8787` from another machine on the same Wi-Fi). It is a
+PWA — "Install" it from the browser menu for a windowed app with its own icon.
+
+- Tap the button (or press Space) and talk: Chrome/Safari/Edge recognize speech
+  in the browser and only the text goes to the server; browsers without speech
+  support record audio and let the server transcribe it (Tencent Cloud ASR).
+- Same classification, confirm sheet, To-do / Reminder / Idea cards, Smart List
+  tiles, edit/delete, and reminders (browser notifications) as the iPhone app.
+- Data stays in that browser (localStorage); phone and web do not sync yet.
+- Microphone and speech need a secure context: `localhost` works as-is; from
+  another computer use HTTPS (e.g. a Fly/Replit deployment) or allow the origin
+  in `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
 
 ### Server
 

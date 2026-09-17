@@ -11,7 +11,7 @@ enum ServerConfig {
         #else
         // The Mac's Bonjour name survives IP changes across Wi-Fi networks;
         // the raw IP broke twice in one week. Editable in 设置 if the Mac is renamed.
-        "http://MacBook-Air-2.local:8787"
+        "http://MacBook-Air-3.local:8787"
         #endif
     }()
 
